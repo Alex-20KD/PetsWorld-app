@@ -26,25 +26,36 @@ export function ReportsProvider({ children }) {
       const params = { ...filters, page };
       const response = await api.get('/reports', { params });
 
-      const data = response.data;
+      // response.data = { success: true, data: { current_page, data: [...], last_page, ... } }
+      const payload = response.data;
 
-      // Soporte para respuesta paginada de Laravel
-      if (data.data) {
+      // Extraer el objeto de paginación de Laravel
+      const paginated = payload.data; // { current_page, data: [...], last_page, total, ... }
+
+      if (paginated && Array.isArray(paginated.data)) {
+        // paginated.data es el array real de reportes
+        const reportsArray = paginated.data;
+
         if (page === 1) {
-          setReports(data.data);
+          setReports(reportsArray);
         } else {
-          setReports((prev) => [...prev, ...data.data]);
+          setReports((prev) => [...(Array.isArray(prev) ? prev : []), ...reportsArray]);
         }
+
         setPagination({
-          currentPage: data.current_page || page,
-          lastPage: data.last_page || 1,
-          total: data.total || data.data.length,
+          currentPage: paginated.current_page || page,
+          lastPage: paginated.last_page || 1,
+          total: paginated.total || reportsArray.length,
         });
+      } else if (Array.isArray(paginated)) {
+        // Respuesta sin paginación: data es directamente un array
+        setReports(paginated);
       } else {
-        setReports(Array.isArray(data) ? data : []);
+        // Fallback: respuesta inesperada
+        setReports([]);
       }
 
-      return { success: true, data };
+      return { success: true, data: payload };
     } catch (error) {
       const message =
         error.response?.data?.message || 'Error al cargar los reportes.';
@@ -64,7 +75,7 @@ export function ReportsProvider({ children }) {
       });
 
       const newReport = response.data.data || response.data;
-      setReports((prev) => [newReport, ...prev]);
+      setReports((prev) => [newReport, ...(Array.isArray(prev) ? prev : [])]);
 
       return { success: true, data: newReport };
     } catch (error) {
@@ -93,7 +104,7 @@ export function ReportsProvider({ children }) {
       const updatedReport = response.data.data || response.data;
 
       setReports((prev) =>
-        prev.map((r) => (r.id === id ? updatedReport : r))
+        (Array.isArray(prev) ? prev : []).map((r) => (r.id === id ? updatedReport : r))
       );
 
       return { success: true, data: updatedReport };
