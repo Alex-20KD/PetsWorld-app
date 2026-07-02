@@ -35,7 +35,7 @@ const SPECIES_OPTIONS = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otro'];
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 export default function ReportsScreen() {
-  const { reports, loading, pagination, fetchReports, createReport } = useReports();
+  const { reports, loading, pagination, fetchReports, createReport, updateReport } = useReports();
   const { user } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,6 +60,16 @@ export default function ReportsScreen() {
   const [isDragging, setIsDragging] = useState(false);
   const locationMapRef = useRef(null);
   const [successMsg, setSuccessMsg] = useState('');
+
+  // ─── Estado del modal de edición ──────────────────────────
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingReport, setEditingReport] = useState(null);
+  const [editPetName, setEditPetName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editContactPhone, setEditContactPhone] = useState('');
+  const [editContactEmail, setEditContactEmail] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState('');
 
   useEffect(() => {
     fetchReports();
@@ -235,6 +245,76 @@ export default function ReportsScreen() {
     }
   }
 
+  // ─── Marcar como encontrado ─────────────────────────────
+  function handleMarkAsFound(item) {
+    Alert.alert(
+      '¿Encontraste a tu mascota?',
+      'Esto marcará el reporte como resuelto y ya no aparecerá como perdido.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, la encontré',
+          style: 'default',
+          onPress: async () => {
+            const result = await updateReport(item.id, {
+              status: 'found',
+              is_found: true,
+              found_at: new Date().toISOString(),
+            });
+            if (result.success) {
+              setSuccessMsg('🎉 ¡Mascota marcada como encontrada!');
+              setTimeout(() => setSuccessMsg(''), 4000);
+              fetchReports();
+            } else {
+              Alert.alert('Error', result.error || 'No se pudo actualizar el reporte.');
+            }
+          },
+        },
+      ],
+    );
+  }
+
+  // ─── Abrir modal de edición ─────────────────────────────
+  function openEditModal(item) {
+    setEditingReport(item);
+    setEditPetName(item.pet_name || '');
+    setEditDescription(item.description || '');
+    setEditContactPhone(item.contact_phone || '');
+    setEditContactEmail(item.contact_email || '');
+    setEditError('');
+    setEditModalVisible(true);
+  }
+
+  function closeEditModal() {
+    setEditModalVisible(false);
+    setEditingReport(null);
+    setEditError('');
+  }
+
+  async function handleSaveEdit() {
+    if (!editDescription.trim()) {
+      setEditError('La descripción es obligatoria.');
+      return;
+    }
+    setSaving(true);
+    setEditError('');
+    const result = await updateReport(editingReport.id, {
+      pet_name: editPetName.trim(),
+      description: editDescription.trim(),
+      contact_phone: editContactPhone.trim(),
+      contact_email: editContactEmail.trim(),
+    });
+    setSaving(false);
+    if (result.success) {
+      closeEditModal();
+      setSuccessMsg('✏️ Reporte actualizado correctamente.');
+      setTimeout(() => setSuccessMsg(''), 4000);
+      fetchReports();
+    } else {
+      setEditError(result.error || 'No se pudo guardar.');
+    }
+  }
+
   // ─── Helpers ────────────────────────────────────────────
   function statusColor(s) {
     if (s === 'active' || s === 'perdido' || s === 'en_busqueda') return '#FF9800';
@@ -300,6 +380,26 @@ export default function ReportsScreen() {
               👤 {item.reporter_name || item.user?.full_name}
             </Text>
           ) : null}
+
+          {/* Botones del propietario */}
+          {user && item.user_id === user.id && item.status === 'active' && (
+            <View style={styles.ownerActions}>
+              <TouchableOpacity
+                style={styles.editBtn}
+                onPress={() => openEditModal(item)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.editBtnText}>✏️ Editar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.foundBtn}
+                onPress={() => handleMarkAsFound(item)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.foundBtnText}>✅ Marcar como encontrado</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </Card.Content>
       </Card>
     );
@@ -668,6 +768,131 @@ export default function ReportsScreen() {
               </View>
             </>
           )}
+        </View>
+      </Modal>
+
+      {/* ─── Modal de edición ──────────────────────────────── */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeEditModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { height: '70%' }]}>
+            <KeyboardAvoidingView
+              style={{ flex: 1 }}
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
+              <ScrollView
+                contentContainerStyle={styles.modalScroll}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Modal header */}
+                <View style={styles.modalHandle} />
+                <View style={styles.modalHeader}>
+                  <Text variant="headlineSmall" style={styles.modalTitle}>
+                    Editar Reporte
+                  </Text>
+                  <IconButton icon="close" onPress={closeEditModal} disabled={saving} />
+                </View>
+                <Divider style={{ marginBottom: 20 }} />
+
+                {/* pet_name */}
+                <TextInput
+                  label="Nombre de la mascota"
+                  value={editPetName}
+                  onChangeText={setEditPetName}
+                  mode="outlined"
+                  left={<TextInput.Icon icon="paw" />}
+                  style={styles.modalInput}
+                  outlineStyle={styles.inputOutline}
+                  outlineColor="#D1CFE2"
+                  activeOutlineColor="#FF6B35"
+                  disabled={saving}
+                />
+
+                {/* description */}
+                <TextInput
+                  label="Descripción *"
+                  value={editDescription}
+                  onChangeText={setEditDescription}
+                  mode="outlined"
+                  multiline
+                  numberOfLines={3}
+                  left={<TextInput.Icon icon="text" />}
+                  style={[styles.modalInput, { minHeight: 80 }]}
+                  outlineStyle={styles.inputOutline}
+                  outlineColor="#D1CFE2"
+                  activeOutlineColor="#FF6B35"
+                  disabled={saving}
+                />
+
+                {/* contact_phone */}
+                <TextInput
+                  label="Teléfono de contacto"
+                  value={editContactPhone}
+                  onChangeText={setEditContactPhone}
+                  mode="outlined"
+                  keyboardType="phone-pad"
+                  left={<TextInput.Icon icon="phone" />}
+                  style={styles.modalInput}
+                  outlineStyle={styles.inputOutline}
+                  outlineColor="#D1CFE2"
+                  activeOutlineColor="#FF6B35"
+                  disabled={saving}
+                />
+
+                {/* contact_email */}
+                <TextInput
+                  label="Email de contacto"
+                  value={editContactEmail}
+                  onChangeText={setEditContactEmail}
+                  mode="outlined"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  left={<TextInput.Icon icon="email" />}
+                  style={styles.modalInput}
+                  outlineStyle={styles.inputOutline}
+                  outlineColor="#D1CFE2"
+                  activeOutlineColor="#FF6B35"
+                  disabled={saving}
+                />
+
+                {/* Error */}
+                {editError ? (
+                  <View style={styles.formErrorBox}>
+                    <Text style={styles.formErrorText}>❌ {editError}</Text>
+                  </View>
+                ) : null}
+
+                {/* Botones */}
+                <View style={styles.editModalButtons}>
+                  <TouchableOpacity
+                    style={styles.editCancelBtn}
+                    onPress={closeEditModal}
+                    disabled={saving}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.editCancelText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.editSaveBtn, saving && styles.submitBtnDisabled]}
+                    onPress={handleSaveEdit}
+                    disabled={saving}
+                    activeOpacity={0.8}
+                  >
+                    {saving ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.editSaveText}>Guardar cambios</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          </View>
         </View>
       </Modal>
     </View>
@@ -1111,5 +1336,80 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+
+  // ─── Owner action buttons ──────────────────────────────
+  ownerActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  editBtn: {
+    flex: 1,
+    backgroundColor: '#E3F2FD',
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#90CAF9',
+  },
+  editBtnText: {
+    color: '#1565C0',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  foundBtn: {
+    flex: 2,
+    backgroundColor: '#E8F5E9',
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#A5D6A7',
+  },
+  foundBtnText: {
+    color: '#2E7D32',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+
+  // ─── Edit modal buttons ────────────────────────────────
+  editModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+    marginBottom: 24,
+  },
+  editCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
+  },
+  editCancelText: {
+    color: '#6B7280',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  editSaveBtn: {
+    flex: 2,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#FF6B35',
+    elevation: 4,
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  editSaveText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });
