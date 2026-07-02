@@ -16,6 +16,11 @@
       }
     },
     "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDc9VKLG0Zh5DhdNDwl3uAY5v0YPiVvHAs"
+        }
+      },
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -26,8 +31,13 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "CAMERA",
-        "READ_EXTERNAL_STORAGE"
-      ]
+        "READ_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.gonzalodev.petsworld"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -47,6 +57,12 @@
           "locationWhenInUsePermission": "PetsWorld necesita tu ubicación para mostrar mascotas perdidas cercanas."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "50f3d2e2-ef37-4837-8f1e-464e06b40cd7"
+      }
+    }
   }
 }

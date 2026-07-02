@@ -1,166 +1,169 @@
-import React, { useEffect, useState } from 'react';
-import { View, Alert, ScrollView, FlatList } from 'react-native';
-import { Text, ActivityIndicator, Chip, Card, Divider } from 'react-native-paper';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import MapView, { Marker, Callout, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useReports } from '../../context/ReportsContext';
-import { StyleSheet } from 'react-native';
+
+// Región por defecto (Quito) — se usa mientras el GPS resuelve
+const defaultRegion = {
+  latitude: -0.1807,
+  longitude: -78.4678,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
+};
 
 export default function MapScreen() {
   const { reports, fetchReports, loading } = useReports();
-  const [location, setLocation] = useState(null);
-  const [locationLoading, setLocationLoading] = useState(true);
+  const [hasGps, setHasGps] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const mapRef = useRef(null);
 
   useEffect(() => {
-    getLocation();
+    initLocation();
     fetchReports();
   }, []);
 
-  async function getLocation() {
+  async function initLocation() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permiso denegado', 'Necesitamos tu ubicación para mostrar mascotas cercanas.');
-        setLocationLoading(false);
+        setPermissionDenied(true);
         return;
       }
-      const cur = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setLocation({
-        latitude: cur.coords.latitude,
-        longitude: cur.coords.longitude,
+
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
       });
+
+      setHasGps(true);
+
+      // Animar el mapa a la posición real del usuario
+      mapRef.current?.animateToRegion(
+        {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        },
+        1000,
+      );
     } catch (e) {
-      console.warn('Error ubicación:', e);
-    } finally {
-      setLocationLoading(false);
+      console.warn('Error obteniendo ubicación:', e);
     }
   }
 
-  function statusColor(s) {
-    if (s === 'perdido') return '#FF6B6B';
-    if (s === 'encontrado') return '#4CAF50';
-    if (s === 'en_busqueda') return '#FF9800';
-    return '#6C63FF';
+  // ---------- helpers ----------
+
+  function markerColor(status) {
+    switch (status) {
+      case 'perdido':
+      case 'active':
+        return 'red';
+      case 'encontrado':
+      case 'found':
+        return 'green';
+      case 'en_busqueda':
+        return 'orange';
+      case 'cancelled':
+        return 'gray';
+      default:
+        return 'violet';
+    }
   }
 
   function statusLabel(s) {
-    if (s === 'perdido') return 'Perdido';
-    if (s === 'encontrado') return 'Encontrado';
-    if (s === 'en_busqueda') return 'En búsqueda';
-    return s || 'Desconocido';
+    switch (s) {
+      case 'perdido':
+      case 'active':
+        return 'Perdido';
+      case 'encontrado':
+      case 'found':
+        return 'Encontrado';
+      case 'en_busqueda':
+        return 'En búsqueda';
+      case 'cancelled':
+        return 'Cancelado';
+      default:
+        return s || 'Desconocido';
+    }
   }
 
-  if (locationLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#6C63FF" />
-        <Text style={{ color: '#6B7280', marginTop: 12 }}>Obteniendo ubicación...</Text>
-      </View>
-    );
-  }
+  // ---------- reportes válidos con coordenadas ----------
 
   const reportsList = Array.isArray(reports) ? reports : [];
+  const markableReports = reportsList.filter(
+    (r) => r.latitude != null && r.longitude != null,
+  );
 
-  function renderReport({ item: r }) {
+  // ---------- render ----------
+
+  if (permissionDenied) {
     return (
-      <Card style={styles.reportCard} mode="elevated">
-        <Card.Content>
-          <View style={styles.reportHeader}>
-            <Text variant="titleMedium" style={styles.reportName}>
-              🐾 {r.pet_name || 'Sin nombre'}
-            </Text>
-            <View style={[styles.statusBadge, { backgroundColor: statusColor(r.status) + '20' }]}>  
-              <Text style={[styles.statusText, { color: statusColor(r.status) }]}>
-                {statusLabel(r.status)}
-              </Text>
-            </View>
-          </View>
-          <Text variant="bodyMedium" style={styles.reportSpecies}>
-            {r.species || 'Especie desconocida'}
-          </Text>
-          {(r.latitude && r.longitude) ? (
-            <Text variant="bodySmall" style={styles.reportCoords}>
-              📍 {parseFloat(r.latitude).toFixed(5)}, {parseFloat(r.longitude).toFixed(5)}
-            </Text>
-          ) : (
-            <Text variant="bodySmall" style={styles.reportCoords}>
-              📍 Sin coordenadas
-            </Text>
-          )}
-        </Card.Content>
-      </Card>
+      <View style={styles.center}>
+        <Text style={styles.gpsIcon}>📍</Text>
+        <Text style={styles.gpsMessage}>Activa el GPS para ver el mapa</Text>
+      </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text variant="titleLarge" style={styles.headerTitle}>🗺️ Mapa</Text>
-        <Chip icon="refresh" onPress={() => fetchReports()} style={styles.refreshChip}>
-          {loading ? 'Cargando...' : `${reportsList.length} reportes`}
-        </Chip>
-      </View>
-
-      <ScrollView style={styles.scrollBody} contentContainerStyle={styles.scrollContent}>
-        {/* Ubicación GPS */}
-        <Card style={styles.locationCard} mode="elevated">
-          <Card.Content>
-            <Text variant="titleMedium" style={styles.sectionTitle}>📡 Tu ubicación actual</Text>
-            {location ? (
-              <View style={styles.coordsContainer}>
-                <View style={styles.coordRow}>
-                  <Text variant="bodyMedium" style={styles.coordLabel}>Latitud</Text>
-                  <Text variant="bodyMedium" style={styles.coordValue}>
-                    {location.latitude.toFixed(6)}
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={defaultRegion}
+        showsUserLocation={hasGps}
+        showsMyLocationButton={hasGps}
+      >
+        {markableReports.map((r) => (
+          <React.Fragment key={r.id}>
+            <Marker
+              coordinate={{
+                latitude: parseFloat(r.latitude),
+                longitude: parseFloat(r.longitude),
+              }}
+              pinColor={markerColor(r.status)}
+            >
+              <Callout tooltip={false}>
+                <View style={styles.callout}>
+                  <Text style={styles.calloutTitle}>
+                    🐾 {r.pet_name || 'Sin nombre'}
+                  </Text>
+                  <Text style={styles.calloutSpecies}>
+                    {r.species || 'Especie desconocida'}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.calloutStatus,
+                      { color: markerColor(r.status) === 'gray' ? '#888' : markerColor(r.status) },
+                    ]}
+                  >
+                    {statusLabel(r.status)}
                   </Text>
                 </View>
-                <Divider style={styles.coordDivider} />
-                <View style={styles.coordRow}>
-                  <Text variant="bodyMedium" style={styles.coordLabel}>Longitud</Text>
-                  <Text variant="bodyMedium" style={styles.coordValue}>
-                    {location.longitude.toFixed(6)}
-                  </Text>
-                </View>
-              </View>
-            ) : (
-              <Text variant="bodyMedium" style={styles.noLocation}>
-                No se pudo obtener la ubicación
-              </Text>
-            )}
-          </Card.Content>
-        </Card>
+              </Callout>
+            </Marker>
+            <Circle
+              center={{
+                latitude: parseFloat(r.latitude),
+                longitude: parseFloat(r.longitude),
+              }}
+              radius={(r.radius_km || 5) * 1000}
+              fillColor="rgba(255, 107, 53, 0.15)"
+              strokeColor="rgba(255, 107, 53, 0.5)"
+              strokeWidth={2}
+            />
+          </React.Fragment>
+        ))}
+      </MapView>
 
-        {/* Aviso temporal */}
-        <View style={styles.comingSoonBanner}>
-          <Text style={styles.comingSoonIcon}>🚧</Text>
-          <Text variant="bodyMedium" style={styles.comingSoonText}>
-            Mapa interactivo disponible próximamente
-          </Text>
-          <Text variant="bodySmall" style={styles.comingSoonSubtext}>
-            Se requiere configurar una API Key de Google Maps para Android
-          </Text>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="small" color="#6C63FF" />
+          <Text style={styles.overlayText}>Cargando reportes…</Text>
         </View>
-
-        {/* Lista de reportes */}
-        <Text variant="titleMedium" style={styles.listTitle}>
-          Reportes activos
-        </Text>
-
-        {reportsList.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📭</Text>
-            <Text variant="bodyLarge" style={styles.emptyText}>
-              No hay reportes aún
-            </Text>
-          </View>
-        ) : (
-          reportsList.map((r) => (
-            <React.Fragment key={r.id}>
-              {renderReport({ item: r })}
-            </React.Fragment>
-          ))
-        )}
-      </ScrollView>
+      )}
     </View>
   );
 }
@@ -168,155 +171,69 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5FA',
+  },
+  map: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: '#F5F5FA',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingTop: 56,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  headerTitle: {
-    fontWeight: '700',
-    color: '#1A1A2E',
-  },
-  refreshChip: {
-    backgroundColor: '#E8E6FF',
-  },
-  scrollBody: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  // GPS location card
-  locationCard: {
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    marginBottom: 16,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontWeight: '700',
-    color: '#1A1A2E',
-    marginBottom: 12,
-  },
-  coordsContainer: {
-    backgroundColor: '#F8F7FF',
-    borderRadius: 12,
-    padding: 12,
-  },
-  coordRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  coordLabel: {
-    color: '#6B7280',
-  },
-  coordValue: {
-    color: '#1A1A2E',
-    fontWeight: '600',
-    fontFamily: 'monospace',
-  },
-  coordDivider: {
-    backgroundColor: '#E8E6FF',
-  },
-  noLocation: {
-    color: '#9E9E9E',
-    fontStyle: 'italic',
-  },
-  // Coming soon banner
-  comingSoonBanner: {
-    backgroundColor: '#FFF8E1',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#FFE082',
-  },
-  comingSoonIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  comingSoonText: {
-    fontWeight: '700',
-    color: '#F57F17',
-    textAlign: 'center',
-  },
-  comingSoonSubtext: {
-    color: '#F9A825',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  // Reports list
-  listTitle: {
-    fontWeight: '700',
-    color: '#1A1A2E',
-    marginBottom: 12,
-  },
-  reportCard: {
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    marginBottom: 12,
-    elevation: 2,
-  },
-  reportHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  reportName: {
-    fontWeight: '700',
-    color: '#1A1A2E',
-    flexShrink: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  reportSpecies: {
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  reportCoords: {
-    color: '#9E9E9E',
-    fontFamily: 'monospace',
-    fontSize: 12,
-  },
-  // Empty state
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyIcon: {
+  gpsIcon: {
     fontSize: 48,
     marginBottom: 12,
   },
-  emptyText: {
-    color: '#9E9E9E',
+  gpsMessage: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  // Callout
+  callout: {
+    width: 200,
+    padding: 8,
+  },
+  calloutTitle: {
+    fontWeight: '700',
+    fontSize: 14,
+    color: '#1A1A2E',
+    marginBottom: 2,
+  },
+  calloutSpecies: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  calloutStatus: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  // Loading overlay while fetching reports
+  loadingOverlay: {
+    position: 'absolute',
+    top: 60,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  overlayText: {
+    marginLeft: 8,
+    color: '#6B7280',
+    fontSize: 13,
   },
 });

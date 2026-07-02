@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   FlatList,
@@ -10,6 +10,7 @@ import {
   Platform,
   TouchableOpacity,
   ActionSheetIOS,
+  Dimensions,
 } from 'react-native';
 import {
   Text,
@@ -24,11 +25,14 @@ import {
 } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+
 import { useReports } from '../../context/ReportsContext';
 import { useAuth } from '../../context/AuthContext';
 import { StyleSheet } from 'react-native';
 
 const SPECIES_OPTIONS = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otro'];
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 export default function ReportsScreen() {
   const { reports, loading, pagination, fetchReports, createReport } = useReports();
@@ -43,10 +47,18 @@ export default function ReportsScreen() {
   const [contactPhone, setContactPhone] = useState('');
   const [photo, setPhoto] = useState(null);
   const [gpsCoords, setGpsCoords] = useState(null);
-  const [gpsError, setGpsError] = useState(false);
-  const [gpsLoading, setGpsLoading] = useState(false);
+  const [radiusKm, setRadiusKm] = useState(5);
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState('');
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [markerCoordinate, setMarkerCoordinate] = useState({
+    latitude: -0.1807,
+    longitude: -78.4678,
+  });
+  const [tempRadius, setTempRadius] = useState(5);
+  const [mapGpsLoading, setMapGpsLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const locationMapRef = useRef(null);
   const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
@@ -66,34 +78,10 @@ export default function ReportsScreen() {
   }
 
   // ─── Modal open/close ───────────────────────────────────
-  async function openModal() {
+  function openModal() {
     setModalVisible(true);
     setFormError('');
     setSuccessMsg('');
-    setGpsLoading(true);
-    setGpsError(false);
-
-    // Obtener GPS automáticamente al abrir el modal
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        setGpsCoords({
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        });
-        setGpsError(false);
-      } else {
-        setGpsError(true);
-      }
-    } catch (e) {
-      console.warn('No se pudo obtener GPS:', e);
-      setGpsError(true);
-    } finally {
-      setGpsLoading(false);
-    }
   }
 
   function closeModal() {
@@ -104,8 +92,46 @@ export default function ReportsScreen() {
     setContactPhone('');
     setPhoto(null);
     setGpsCoords(null);
-    setGpsError(false);
+    setRadiusKm(5);
     setFormError('');
+  }
+
+  // ─── Location picker ───────────────────────────────────
+  async function openLocationPicker() {
+    setMapGpsLoading(true);
+    setLocationModalVisible(true);
+    setTempRadius(radiusKm);
+
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        setMarkerCoordinate({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+        });
+      }
+      // Si no hay permiso, markerCoordinate mantiene su valor default/anterior
+    } catch (e) {
+      console.warn('GPS error en picker:', e);
+    } finally {
+      setMapGpsLoading(false);
+    }
+  }
+
+  function confirmLocation() {
+    setGpsCoords({
+      latitude: markerCoordinate.latitude,
+      longitude: markerCoordinate.longitude,
+    });
+    setRadiusKm(tempRadius);
+    setLocationModalVisible(false);
+  }
+
+  function cancelLocationPicker() {
+    setLocationModalVisible(false);
   }
 
   // ─── Cámara / Galería ──────────────────────────────────
@@ -186,6 +212,7 @@ export default function ReportsScreen() {
     formData.append('species', species || 'Otro');
     formData.append('latitude', gpsCoords.latitude.toString());
     formData.append('longitude', gpsCoords.longitude.toString());
+    formData.append('radius_km', radiusKm.toString());
     if (contactPhone.trim()) formData.append('contact_phone', contactPhone.trim());
 
     if (photo) {
@@ -439,28 +466,56 @@ export default function ReportsScreen() {
                   disabled={creating}
                 />
 
-                {/* GPS status */}
+                {/* Ubicación — map picker */}
                 <Text variant="labelLarge" style={styles.fieldLabel}>
-                  Ubicación GPS
+                  Ubicación
                 </Text>
-                {gpsLoading ? (
-                  <View style={styles.gpsRow}>
-                    <ActivityIndicator size="small" color="#FF6B35" />
-                    <Text style={styles.gpsLoadingText}>Obteniendo ubicación...</Text>
-                  </View>
-                ) : gpsCoords ? (
-                  <View style={styles.gpsSuccess}>
-                    <Text style={styles.gpsSuccessText}>
-                      📍 Ubicación obtenida: {gpsCoords.latitude.toFixed(5)},{' '}
-                      {gpsCoords.longitude.toFixed(5)}
-                    </Text>
+                {gpsCoords ? (
+                  <View style={{ marginBottom: 16 }}>
+                    <View style={styles.gpsSuccess}>
+                      <Text style={styles.gpsSuccessText}>
+                        📍 Ubicación seleccionada ✓
+                      </Text>
+                      <Text style={[styles.gpsSuccessText, { fontWeight: '400', marginTop: 2 }]}>
+                        Radio de búsqueda: {radiusKm} km
+                      </Text>
+                    </View>
+                    <View style={styles.miniMapContainer}>
+                      <MapView
+                        style={styles.miniMap}
+                        provider={PROVIDER_GOOGLE}
+                        region={{
+                          latitude: gpsCoords.latitude,
+                          longitude: gpsCoords.longitude,
+                          latitudeDelta: 0.01,
+                          longitudeDelta: 0.01,
+                        }}
+                        scrollEnabled={false}
+                        zoomEnabled={false}
+                        rotateEnabled={false}
+                        pitchEnabled={false}
+                      >
+                        <Marker coordinate={gpsCoords} pinColor="red" />
+                      </MapView>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.changeLocationBtn}
+                      onPress={openLocationPicker}
+                      disabled={creating}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.changeLocationText}>Cambiar ubicación</Text>
+                    </TouchableOpacity>
                   </View>
                 ) : (
-                  <View style={styles.gpsErrorBox}>
-                    <Text style={styles.gpsErrorText}>
-                      ⚠️ Activa el GPS para continuar
-                    </Text>
-                  </View>
+                  <TouchableOpacity
+                    style={styles.locationPickerBtn}
+                    onPress={openLocationPicker}
+                    disabled={creating}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.locationPickerBtnText}>📍 Elegir ubicación en el mapa</Text>
+                  </TouchableOpacity>
                 )}
 
                 {/* Foto */}
@@ -514,6 +569,105 @@ export default function ReportsScreen() {
               </ScrollView>
             </KeyboardAvoidingView>
           </View>
+        </View>
+      </Modal>
+
+      {/* ─── Modal de selección de ubicación ──────────────── */}
+      <Modal
+        visible={locationModalVisible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={cancelLocationPicker}
+      >
+        <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+          {mapGpsLoading ? (
+            <View style={styles.center}>
+              <ActivityIndicator size="large" color="#FF6B35" />
+              <Text style={{ color: '#6B7280', marginTop: 12 }}>Obteniendo ubicación…</Text>
+            </View>
+          ) : (
+            <>
+              {/* Instrucción flotante */}
+              <View style={styles.mapInstruction}>
+                <Text style={styles.mapInstructionText}>
+                  Arrastra el marcador al lugar donde se perdió tu mascota
+                </Text>
+              </View>
+
+              <MapView
+                ref={locationMapRef}
+                style={{ width: SCREEN_W, height: SCREEN_H * 0.6 }}
+                provider={PROVIDER_GOOGLE}
+                initialRegion={{
+                  latitude: markerCoordinate.latitude,
+                  longitude: markerCoordinate.longitude,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+                showsUserLocation
+                scrollEnabled={!isDragging}
+                pitchEnabled={false}
+                rotateEnabled={false}
+              >
+                <Marker
+                  coordinate={markerCoordinate}
+                  draggable={true}
+                  tracksViewChanges={false}
+                  onDragStart={() => setIsDragging(true)}
+                  onDragEnd={(e) => {
+                    setIsDragging(false);
+                    setMarkerCoordinate(e.nativeEvent.coordinate);
+                  }}
+                  pinColor="red"
+                />
+              </MapView>
+
+              {/* Panel inferior: radio chips + botones */}
+              <View style={styles.mapBottomPanel}>
+                <Text style={styles.radiusLabel}>
+                  Radio de búsqueda: {tempRadius} km
+                </Text>
+                <View style={styles.radiusChipsRow}>
+                  {[1, 3, 5, 10, 20].map((km) => (
+                    <TouchableOpacity
+                      key={km}
+                      style={[
+                        styles.radiusChip,
+                        tempRadius === km && styles.radiusChipActive,
+                      ]}
+                      onPress={() => setTempRadius(km)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.radiusChipText,
+                          tempRadius === km && styles.radiusChipTextActive,
+                        ]}
+                      >
+                        {km} km
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={styles.mapButtonsRow}>
+                  <TouchableOpacity
+                    style={styles.mapCancelBtn}
+                    onPress={cancelLocationPicker}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.mapCancelText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.mapConfirmBtn}
+                    onPress={confirmLocation}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.mapConfirmText}>Confirmar ubicación</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          )}
         </View>
       </Modal>
     </View>
@@ -741,21 +895,12 @@ const styles = StyleSheet.create({
     color: '#FF6B35',
   },
 
-  // ─── GPS ───────────────────────────────────────────────
-  gpsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  gpsLoadingText: {
-    color: '#6B7280',
-  },
+  // ─── GPS / Location picker ─────────────────────────────
   gpsSuccess: {
     backgroundColor: '#E8F5E9',
     borderRadius: 12,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#C8E6C9',
   },
@@ -764,18 +909,125 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 13,
   },
-  gpsErrorBox: {
-    backgroundColor: '#FFEBEE',
+  miniMapContainer: {
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FFCDD2',
+    overflow: 'hidden',
+    marginBottom: 8,
   },
-  gpsErrorText: {
-    color: '#C62828',
+  miniMap: {
+    width: '100%',
+    height: 150,
+  },
+  changeLocationBtn: {
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  changeLocationText: {
+    color: '#FF6B35',
     fontWeight: '600',
     fontSize: 13,
+  },
+  locationPickerBtn: {
+    backgroundColor: '#FFF3ED',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FF6B35',
+    borderStyle: 'dashed',
+    marginBottom: 16,
+  },
+  locationPickerBtnText: {
+    color: '#FF6B35',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  // ─── Location modal ───────────────────────────────────
+  locationModalContainer: {
+    flex: 1,
+  },
+  mapInstruction: {
+    position: 'absolute',
+    top: 50,
+    alignSelf: 'center',
+    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  mapInstructionText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  mapBottomPanel: {
+    padding: 20,
+    paddingBottom: 36,
+    backgroundColor: '#FFFFFF',
+  },
+  radiusLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1A2E',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  radiusChipsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  radiusChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+    borderWidth: 1.5,
+    borderColor: '#E0E0E0',
+  },
+  radiusChipActive: {
+    backgroundColor: '#FF6B35',
+    borderColor: '#FF6B35',
+  },
+  radiusChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  radiusChipTextActive: {
+    color: '#FFFFFF',
+  },
+  mapButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  mapCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
+  },
+  mapCancelText: {
+    color: '#6B7280',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  mapConfirmBtn: {
+    flex: 2,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#FF6B35',
+    elevation: 4,
+  },
+  mapConfirmText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
   },
 
   // ─── Photo ─────────────────────────────────────────────
