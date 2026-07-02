@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Linking } from 'react-native';
 import MapView, { Marker, Callout, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useReports } from '../../context/ReportsContext';
@@ -53,6 +53,16 @@ export default function MapScreen() {
   }
 
   // ---------- helpers ----------
+
+  function openWhatsApp(phone, petName, species) {
+    if (!phone) return;
+    const cleaned = phone.replace(/\D/g, '');
+    const number = `593${cleaned.startsWith('0') ? cleaned.slice(1) : cleaned}`;
+    const name = petName || 'tu mascota';
+    const message = `¡Hola! Vi en PetsWorld que perdiste a ${name} (${species || 'mascota'}). ¿Puedo ayudarte a encontrarla? 🐾`;
+    const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+    Linking.openURL(url);
+  }
 
   function markerColor(status) {
     switch (status) {
@@ -125,13 +135,16 @@ export default function MapScreen() {
               }}
               pinColor={markerColor(r.status)}
             >
-              <Callout tooltip={false}>
+              <Callout onPress={() => openWhatsApp(r.contact_phone, r.pet_name, r.species)} tooltip={false}>
                 <View style={styles.callout}>
                   <Text style={styles.calloutTitle}>
-                    🐾 {r.pet_name || 'Sin nombre'}
+                    {r.pet_name || 'Sin nombre'}
                   </Text>
                   <Text style={styles.calloutSpecies}>
-                    {r.species || 'Especie desconocida'}
+                    🐾 {r.species || 'Especie desconocida'}
+                  </Text>
+                  <Text style={styles.calloutLocation}>
+                    📍 {r.location_description || 'Sin ubicación'}
                   </Text>
                   <Text
                     style={[
@@ -141,6 +154,13 @@ export default function MapScreen() {
                   >
                     {statusLabel(r.status)}
                   </Text>
+                  {r.contact_phone ? (
+                    <Text style={styles.calloutWhatsApp}>
+                      💬 Contactar por WhatsApp
+                    </Text>
+                  ) : (
+                    <Text style={styles.calloutNoContact}>Sin contacto</Text>
+                  )}
                 </View>
               </Callout>
             </Marker>
@@ -213,6 +233,22 @@ const styles = StyleSheet.create({
   calloutStatus: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  calloutLocation: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  calloutWhatsApp: {
+    color: '#25D366',
+    marginTop: 6,
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  calloutNoContact: {
+    color: '#999',
+    marginTop: 6,
+    fontSize: 12,
   },
   // Loading overlay while fetching reports
   loadingOverlay: {
