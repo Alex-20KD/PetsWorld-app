@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,29 @@ import {
   Linking,
   Alert,
   Platform,
+  TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
-import MapView, { Marker, Callout, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 
 import { useReports } from '../../context/ReportsContext';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import PokeballOverlay from '../../components/PokeballOverlay';
 
-// Región por defecto (Quito) — se usa mientras el GPS resuelve
+// ─── Overlay components ──────────────────────────────────────
+import PokeballOverlay from '../../components/PokeballOverlay';
+import PetMarker from '../../components/map/PetMarker';
+import MapHeader from '../../components/map/MapHeader';
+import MapSearchBar from '../../components/map/MapSearchBar';
+import MapFilterPanel from '../../components/map/MapFilterPanel';
+import MapActionButtons from '../../components/map/MapActionButtons';
+
+// ─── Custom map style ───────────────────────────────────────
+import mapStyleLight from '../../constants/mapStyle';
+
+// ─── Constants ───────────────────────────────────────────────
 const defaultRegion = {
   latitude: -0.1807,
   longitude: -78.4678,
@@ -24,7 +37,7 @@ const defaultRegion = {
   longitudeDelta: 0.05,
 };
 
-// ─── Haversine: distancia en km entre dos coordenadas ────────
+// ─── Haversine: distance in km between two coordinates ──────
 function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -37,17 +50,45 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// ─── Species mapping for filters ────────────────────────────
+function speciesMatchesDog(species) {
+  return !species || species.toLowerCase() === 'perro';
+}
+function speciesMatchesCat(species) {
+  return species && species.toLowerCase() === 'gato';
+}
+
 export default function MapScreen() {
   const { reports, fetchReports, loading } = useReports();
   const { user } = useAuth();
+  const router = useRouter();
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
   const [hasGps, setHasGps] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [userCoords, setUserCoords] = useState(null);
   const mapRef = useRef(null);
 
-  // ─── Estado de captura "Pokémon GO" ────────────────────────
+  // ─── Capture state ────────────────────────────────────────
   const [capturing, setCapturing] = useState(false);
   const [captureMessage, setCaptureMessage] = useState('Procesando captura…');
 
+  // ─── Filter & search state ────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    dogs: true,
+    cats: true,
+    lostOnly: false,
+    foundOnly: false,
+  });
+
+  // ─── Selected marker state ────────────────────────────────
+  const [selectedReport, setSelectedReport] = useState(null);
+
+
+
+  // ─── Init ─────────────────────────────────────────────────
   useEffect(() => {
     initLocation();
     fetchReports();
@@ -66,8 +107,11 @@ export default function MapScreen() {
       });
 
       setHasGps(true);
+      setUserCoords({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+      });
 
-      // Animar el mapa a la posición real del usuario
       mapRef.current?.animateToRegion(
         {
           latitude: pos.coords.latitude,
@@ -82,44 +126,7 @@ export default function MapScreen() {
     }
   }
 
-  // ─── helpers ───────────────────────────────────────────────
-
-  function openWhatsApp(phone, petName, species) {
-    if (!phone) return;
-    const cleaned = phone.replace(/\D/g, '');
-    const number = `593${cleaned.startsWith('0') ? cleaned.slice(1) : cleaned}`;
-    const name = petName || 'tu mascota';
-    const message = `¡Hola! Vi en PetsWorld que perdiste a ${name} (${species || 'mascota'}). ¿Puedo ayudarte a encontrarla? 🐾`;
-    const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
-    Linking.openURL(url);
-  }
-
-  function openWhatsAppCapture(phone, petName) {
-    if (!phone) return;
-    const cleaned = phone.replace(/\D/g, '');
-    const number = `593${cleaned.startsWith('0') ? cleaned.slice(1) : cleaned}`;
-    const name = petName || 'tu mascota';
-    const message = `¡Hola! Encontré a ${name} cerca de tu zona de búsqueda. Te envío evidencia 🐾`;
-    const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
-    Linking.openURL(url);
-  }
-
-  function markerColor(status) {
-    switch (status) {
-      case 'perdido':
-      case 'active':
-        return 'red';
-      case 'encontrado':
-      case 'found':
-        return 'green';
-      case 'en_busqueda':
-        return 'orange';
-      case 'cancelled':
-        return 'gray';
-      default:
-        return 'violet';
-    }
-  }
+  // ─── Helpers ──────────────────────────────────────────────
 
   function statusLabel(s) {
     switch (s) {
@@ -138,11 +145,60 @@ export default function MapScreen() {
     }
   }
 
-  // ─── Callout handler (Android-safe) ────────────────────────
-  // En Android, los Callouts no soportan bien botones anidados.
-  // Usamos un Alert para elegir la acción al tocar el Callout.
-  function handleCalloutPress(report) {
-    const isActive = report.status === 'active' || report.status === 'perdido' || report.status === 'en_busqueda';
+  // ─── Filtered reports ─────────────────────────────────────
+
+  const reportsList = Array.isArray(reports) ? reports : [];
+
+  const filteredReports = useMemo(() => {
+    let list = reportsList.filter(
+      (r) => r.latitude != null && r.longitude != null,
+    );
+
+    // Species filter
+    list = list.filter((r) => {
+      const isDog = speciesMatchesDog(r.species);
+      const isCat = speciesMatchesCat(r.species);
+      if (isDog && !filters.dogs) return false;
+      if (isCat && !filters.cats) return false;
+      // Other species always pass if not dog/cat
+      return true;
+    });
+
+    // Status filters (mutually exclusive)
+    if (filters.lostOnly) {
+      list = list.filter(
+        (r) => r.status === 'active' || r.status === 'perdido' || r.status === 'en_busqueda',
+      );
+    }
+    if (filters.foundOnly) {
+      list = list.filter(
+        (r) => r.status === 'found' || r.status === 'encontrado',
+      );
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (r) =>
+          (r.pet_name && r.pet_name.toLowerCase().includes(q)) ||
+          (r.species && r.species.toLowerCase().includes(q)) ||
+          (r.description && r.description.toLowerCase().includes(q)),
+      );
+    }
+
+    return list;
+  }, [reportsList, filters, searchQuery]);
+
+  // ─── Marker tap handler ───────────────────────────────────
+
+  function handleMarkerPress(report) {
+    setSelectedReport(report);
+
+    const isActive =
+      report.status === 'active' ||
+      report.status === 'perdido' ||
+      report.status === 'en_busqueda';
     const hasPhone = !!report.contact_phone;
 
     const buttons = [];
@@ -170,10 +226,22 @@ export default function MapScreen() {
     );
   }
 
-  // ─── Captura "Pokémon GO" ──────────────────────────────────
+  // ─── WhatsApp ─────────────────────────────────────────────
+
+  function openWhatsApp(phone, petName, species) {
+    if (!phone) return;
+    const cleaned = phone.replace(/\D/g, '');
+    const number = `593${cleaned.startsWith('0') ? cleaned.slice(1) : cleaned}`;
+    const name = petName || 'tu mascota';
+    const message = `¡Hola! Vi en PetsWorld que perdiste a ${name} (${species || 'mascota'}). ¿Puedo ayudarte a encontrarla? 🐾`;
+    const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+    Linking.openURL(url);
+  }
+
+  // ─── Capture "Pokémon GO" ─────────────────────────────────
+
   async function handleCapture(report) {
     try {
-      // 1. Obtener ubicación actual del usuario
       setCaptureMessage('Obteniendo tu ubicación…');
       setCapturing(true);
 
@@ -190,7 +258,6 @@ export default function MapScreen() {
       const userLat = userPos.coords.latitude;
       const userLon = userPos.coords.longitude;
 
-      // 2. Verificar distancia con Haversine
       const reportLat = parseFloat(report.latitude);
       const reportLon = parseFloat(report.longitude);
       const radiusKm = report.radius_km || 5;
@@ -208,7 +275,6 @@ export default function MapScreen() {
 
       setCapturing(false);
 
-      // 3. Pedir confirmación al usuario
       Alert.alert(
         '🎯 Confirmar avistamiento',
         '¿Confirmas que viste a esta mascota en esta zona?',
@@ -227,14 +293,11 @@ export default function MapScreen() {
     }
   }
 
-  // ─── Procesar captura tras confirmación ────────────────────
   async function processCapture(report, userLat, userLon) {
     try {
-      // 4. Mostrar PokeballOverlay mientras se procesa
       setCaptureMessage('🎯 ¡Registrando avistamiento!');
       setCapturing(true);
 
-      // 5. POST /api/reports/{id}/capture con coordenadas
       try {
         await api.post(`/reports/${report.id}/capture`, {
           latitude: userLat,
@@ -242,25 +305,21 @@ export default function MapScreen() {
         });
       } catch (apiError) {
         console.warn('Error en POST /capture:', apiError?.response?.data || apiError.message);
-        // Continuamos con WhatsApp incluso si falla el backend
       }
 
       setCapturing(false);
 
-      // 6. Abrir WhatsApp con mensaje
       if (report.contact_phone) {
         const message = `¡Hola! Vi a ${report.pet_name || 'tu mascota'} cerca de tu zona de búsqueda. Comunícate conmigo para más información 🐾`;
         const number = `593${report.contact_phone.replace(/\D/g, '').replace(/^0/, '')}`;
         Linking.openURL(`https://wa.me/${number}?text=${encodeURIComponent(message)}`);
       }
 
-      // 7. Alert de éxito
       Alert.alert(
         '🎉 ¡Avistamiento registrado!',
         'El dueño fue notificado. ¡Gracias por ayudar a encontrar a esta mascota!',
       );
 
-      // Refrescar reportes
       fetchReports();
     } catch (error) {
       console.error('Error en processCapture:', error);
@@ -269,14 +328,46 @@ export default function MapScreen() {
     }
   }
 
-  // ─── reportes válidos con coordenadas ──────────────────────
+  // ─── Action handlers ──────────────────────────────────────
 
-  const reportsList = Array.isArray(reports) ? reports : [];
-  const markableReports = reportsList.filter(
-    (r) => r.latitude != null && r.longitude != null,
-  );
+  function handleCenterOnUser() {
+    if (!userCoords) {
+      Alert.alert('GPS', 'Esperando ubicación GPS…');
+      initLocation();
+      return;
+    }
+    mapRef.current?.animateToRegion(
+      {
+        latitude: userCoords.latitude,
+        longitude: userCoords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      },
+      800,
+    );
+  }
 
-  // ─── render ────────────────────────────────────────────────
+  function handleNavigateToSelected() {
+    if (!selectedReport) return;
+    const lat = parseFloat(selectedReport.latitude);
+    const lng = parseFloat(selectedReport.longitude);
+    const label = encodeURIComponent(selectedReport.pet_name || 'Mascota');
+    const url = Platform.select({
+      ios: `maps://app?daddr=${lat},${lng}&q=${label}`,
+      android: `google.navigation:q=${lat},${lng}`,
+    });
+    Linking.openURL(url).catch(() => {
+      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
+    });
+  }
+
+
+
+  // ─── Compute header height for search bar positioning ─────
+  const headerHeight = isLandscape ? 60 : 90;
+  const searchTop = headerHeight + 6;
+
+  // ─── Render ───────────────────────────────────────────────
 
   if (permissionDenied) {
     return (
@@ -287,95 +378,130 @@ export default function MapScreen() {
     );
   }
 
+  // DEBUG: verify custom map style import (remove after confirming)
+  console.log('[PetMap] customMapStyle entries:', Array.isArray(mapStyleLight) ? mapStyleLight.length : 'NOT AN ARRAY', typeof mapStyleLight);
+
   return (
     <View style={styles.container}>
+      {/* Full-screen map */}
       <MapView
         ref={mapRef}
         style={styles.map}
         provider={PROVIDER_GOOGLE}
+        mapType="standard"
         initialRegion={defaultRegion}
         showsUserLocation={hasGps}
-        showsMyLocationButton={hasGps}
+        showsMyLocationButton={false}
+        customMapStyle={mapStyleLight}
       >
-        {markableReports.map((r) => (
+        {filteredReports.map((r) => (
           <React.Fragment key={r.id}>
-            <Marker
-              coordinate={{
-                latitude: parseFloat(r.latitude),
-                longitude: parseFloat(r.longitude),
-              }}
-              pinColor={markerColor(r.status)}
-            >
-              <Callout onPress={() => handleCalloutPress(r)} tooltip={false}>
-                <View style={styles.callout}>
-                  <Text style={styles.calloutTitle}>
-                    {r.pet_name || 'Sin nombre'}
-                  </Text>
-                  <Text style={styles.calloutSpecies}>
-                    🐾 {r.species || 'Especie desconocida'}
-                  </Text>
-                  <Text style={styles.calloutLocation}>
-                    📍 {r.location_description || 'Sin ubicación'}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.calloutStatus,
-                      { color: markerColor(r.status) === 'gray' ? '#888' : markerColor(r.status) },
-                    ]}
-                  >
-                    {statusLabel(r.status)}
-                  </Text>
-
-                  {/* Separador visual */}
-                  <View style={styles.calloutDivider} />
-
-                  {/* Botón de captura — siempre visible para reportes activos */}
-                  {(r.status === 'active' || r.status === 'perdido' || r.status === 'en_busqueda') && (
-                    <Text style={styles.calloutCapture}>
-                      🎯 ¡Encontré esta mascota!
-                    </Text>
-                  )}
-
-                  {/* Botón de WhatsApp */}
-                  {r.contact_phone ? (
-                    <Text style={styles.calloutWhatsApp}>
-                      💬 Contactar por WhatsApp
-                    </Text>
-                  ) : (
-                    <Text style={styles.calloutNoContact}>Sin contacto</Text>
-                  )}
-
-                  {/* Hint */}
-                  <Text style={styles.calloutHint}>Toca para ver opciones</Text>
-                </View>
-              </Callout>
-            </Marker>
+            <PetMarker
+              report={r}
+              onPress={handleMarkerPress}
+              isSelected={selectedReport?.id === r.id}
+            />
             <Circle
               center={{
                 latitude: parseFloat(r.latitude),
                 longitude: parseFloat(r.longitude),
               }}
               radius={(r.radius_km || 5) * 1000}
-              fillColor="rgba(255, 107, 53, 0.15)"
-              strokeColor="rgba(255, 107, 53, 0.5)"
-              strokeWidth={2}
+              fillColor="rgba(45, 95, 62, 0.08)"
+              strokeColor="rgba(45, 95, 62, 0.3)"
+              strokeWidth={1.5}
             />
           </React.Fragment>
         ))}
       </MapView>
 
+      {/* Loading indicator */}
       {loading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="small" color="#6C63FF" />
+        <View style={[styles.loadingOverlay, { top: searchTop + 52 }]}>
+          <ActivityIndicator size="small" color="#2D5F3E" />
           <Text style={styles.overlayText}>Cargando reportes…</Text>
         </View>
       )}
 
-      {/* PokeballOverlay — se muestra durante el proceso de captura */}
+      {/* ─── Floating overlays ─────────────────────────────── */}
+
+      <MapHeader
+        isLandscape={isLandscape}
+        onSettingsPress={() => router.push('/(tabs)/profile')}
+      />
+
+      <MapSearchBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        topOffset={searchTop}
+        isLandscape={isLandscape}
+      />
+
+      {/* Quick action pills */}
+      <View
+        style={[
+          styles.quickActions,
+          { top: searchTop + 50 },
+          isLandscape && styles.quickActionsLandscape,
+        ]}
+      >
+        <View style={styles.quickPill}>
+          <Text style={styles.quickPillIcon}>🗺️</Text>
+          <Text style={styles.quickPillText}>Vista de Zona</Text>
+        </View>
+        <View style={styles.quickPill}>
+          <Text style={styles.quickPillIcon}>📍</Text>
+          <Text style={styles.quickPillText}>Ruta Rápida</Text>
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.quickPill,
+            filters.foundOnly && styles.quickPillActive,
+          ]}
+          onPress={() =>
+            setFilters((f) => ({
+              ...f,
+              foundOnly: !f.foundOnly,
+              lostOnly: f.foundOnly ? f.lostOnly : false,
+            }))
+          }
+          activeOpacity={0.7}
+        >
+          <Text style={styles.quickPillIcon}>👁️</Text>
+          <Text
+            style={[
+              styles.quickPillText,
+              filters.foundOnly && styles.quickPillTextActive,
+            ]}
+          >
+            Vistos
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <MapFilterPanel
+        filters={filters}
+        onFilterChange={setFilters}
+        isLandscape={isLandscape}
+      />
+
+      <MapActionButtons
+        onMyLocation={handleCenterOnUser}
+        onNewReport={() => router.push('/(tabs)/reports')}
+        onNavigate={handleNavigateToSelected}
+        hasSelectedReport={!!selectedReport}
+        isLandscape={isLandscape}
+      />
+
+
+
+      {/* PokeballOverlay — shown during capture processing */}
       <PokeballOverlay visible={capturing} message={captureMessage} />
     </View>
   );
 }
+
+// ─── Styles ─────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -390,7 +516,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5FA',
+    backgroundColor: '#FAF3E0',
   },
   gpsIcon: {
     fontSize: 48,
@@ -403,62 +529,52 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 32,
   },
-  // Callout
-  callout: {
-    width: 220,
-    padding: 10,
+  // Quick action pills
+  quickActions: {
+    position: 'absolute',
+    left: 16,
+    flexDirection: 'row',
+    gap: 8,
+    zIndex: 85,
   },
-  calloutTitle: {
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#1A1A2E',
-    marginBottom: 2,
+  quickActionsLandscape: {
+    left: 24,
   },
-  calloutSpecies: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 4,
+  quickPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(250, 243, 224, 0.95)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
+      },
+      android: { elevation: 2 },
+    }),
   },
-  calloutStatus: {
+  quickPillActive: {
+    backgroundColor: 'rgba(45, 95, 62, 0.9)',
+  },
+  quickPillIcon: {
+    fontSize: 14,
+  },
+  quickPillText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
+    color: '#2D5F3E',
   },
-  calloutLocation: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 4,
+  quickPillTextActive: {
+    color: '#FFFFFF',
   },
-  calloutDivider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 8,
-  },
-  calloutCapture: {
-    color: '#FF6B35',
-    fontWeight: 'bold',
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  calloutWhatsApp: {
-    color: '#25D366',
-    fontWeight: 'bold',
-    fontSize: 13,
-  },
-  calloutNoContact: {
-    color: '#999',
-    fontSize: 12,
-  },
-  calloutHint: {
-    color: '#9CA3AF',
-    fontSize: 10,
-    marginTop: 6,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  // Loading overlay while fetching reports
+  // Loading overlay
   loadingOverlay: {
     position: 'absolute',
-    top: 60,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
@@ -466,11 +582,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    zIndex: 70,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: { elevation: 4 },
+    }),
   },
   overlayText: {
     marginLeft: 8,
