@@ -9,6 +9,7 @@ import {
   Platform,
   TouchableOpacity,
   useWindowDimensions,
+  Image,
 } from 'react-native';
 import MapView, { Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -424,7 +425,6 @@ export default function MapScreen() {
               <View style={{
                 backgroundColor: r.status === 'found' ? '#4CAF50' : r.status === 'cancelled' ? '#9E9E9E' : '#FF6B35',
                 borderRadius: 20,
-                padding: 6,
                 borderWidth: 2,
                 borderColor: 'white',
                 shadowColor: '#000',
@@ -432,8 +432,17 @@ export default function MapScreen() {
                 shadowOpacity: 0.3,
                 shadowRadius: 3,
                 elevation: 5,
+                width: 36,
+                height: 36,
+                justifyContent: 'center',
+                alignItems: 'center',
+                overflow: 'hidden',
               }}>
-                <Text style={{ fontSize: 16 }}>🐾</Text>
+                {r.photo_url ? (
+                  <Image source={{ uri: r.photo_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                ) : (
+                  <Text style={{ fontSize: 16 }}>🐾</Text>
+                )}
               </View>
             </Marker>
             <Circle
