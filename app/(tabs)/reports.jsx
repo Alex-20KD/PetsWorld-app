@@ -25,7 +25,7 @@ import {
 } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useReports } from '../../context/ReportsContext';
@@ -752,6 +752,13 @@ export default function ReportsScreen() {
                   }}
                   pinColor="red"
                 />
+                <Circle
+                  center={markerCoordinate}
+                  radius={tempRadius * 1000}
+                  fillColor="rgba(59, 107, 42, 0.2)"
+                  strokeColor="rgba(59, 107, 42, 0.6)"
+                  strokeWidth={2}
+                />
               </MapView>
 
               {/* Panel inferior: radio chips + botones */}
@@ -767,7 +774,16 @@ export default function ReportsScreen() {
                         styles.radiusChip,
                         tempRadius === km && styles.radiusChipActive,
                       ]}
-                      onPress={() => setTempRadius(km)}
+                      onPress={() => {
+                        setTempRadius(km);
+                        const delta = (km * 2.5) / 111;
+                        locationMapRef.current?.animateToRegion({
+                          latitude: markerCoordinate.latitude,
+                          longitude: markerCoordinate.longitude,
+                          latitudeDelta: delta,
+                          longitudeDelta: delta,
+                        }, 500);
+                      }}
                       activeOpacity={0.7}
                     >
                       <Text
