@@ -47,8 +47,11 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header con avatar */}
-      <View style={styles.headerSection}>
+      {/* Fondo del Header */}
+      <View style={styles.headerBackground} />
+
+      {/* Info de Perfil superpuesta */}
+      <View style={styles.profileInfoContainer}>
         <View style={styles.avatarContainer}>
           <Avatar.Text
             size={96}
@@ -59,10 +62,10 @@ export default function ProfileScreen() {
           <View style={styles.statusDot} />
         </View>
 
-        <Text variant="headlineSmall" style={styles.userName}>
+        <Text style={styles.userName}>
           {user?.full_name || user?.name || 'Usuario'}
         </Text>
-        <Text variant="bodyLarge" style={styles.userEmail}>
+        <Text style={styles.userEmail}>
           {user?.email || 'Sin correo'}
         </Text>
 
@@ -167,57 +170,70 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerSection: {
-    alignItems: 'center',
-    paddingTop: 64,
-    paddingBottom: 24,
+  headerBackground: {
+    height: 140,
     backgroundColor: '#3B6B2A',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  profileInfoContainer: {
+    alignItems: 'center',
+    marginTop: -48,
+    marginBottom: 8,
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   avatar: {
-    backgroundColor: '#F5F0E8',
+    backgroundColor: '#FDF5E6',
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
   },
   avatarLabel: {
     fontSize: 36,
-    fontWeight: '700',
+    fontWeight: 'bold',
     color: '#3B6B2A',
   },
   statusDot: {
     position: 'absolute',
-    bottom: 4,
-    right: 4,
+    bottom: 6,
+    right: 6,
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#8BC34A',
     borderWidth: 3,
     borderColor: '#FFFFFF',
   },
   userName: {
-    fontWeight: '800',
-    color: '#FDF5E6',
+    fontFamily: 'serif',
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#6B5A3E',
     marginBottom: 4,
   },
   userEmail: {
-    color: '#FDF5E6',
+    color: '#9B8B6E',
+    fontSize: 15,
     marginBottom: 12,
   },
   rolBadge: {
-    backgroundColor: 'rgba(253, 245, 230, 0.2)',
+    backgroundColor: 'rgba(59,107,42,0.1)',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(59,107,42,0.2)',
   },
   rolText: {
-    color: '#FDF5E6',
-    fontWeight: '700',
+    color: '#3B6B2A',
+    fontWeight: 'bold',
     fontSize: 13,
   },
   divider: {
-    marginVertical: 0,
+    marginVertical: 16,
+    backgroundColor: 'transparent',
   },
   infoSection: {
     paddingHorizontal: 20,
@@ -258,15 +274,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 32,
     borderRadius: 12,
-    backgroundColor: '#F5D0C0',
+    backgroundColor: '#E8834A',
   },
   logoutContent: {
     height: 52,
   },
   logoutLabel: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#C4521A',
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   version: {
     textAlign: 'center',

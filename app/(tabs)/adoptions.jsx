@@ -13,7 +13,9 @@ import {
   Text,
   ActivityIndicator,
   Divider,
+  IconButton,
 } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import adoptionApi from '../../services/adoptionApi';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -49,6 +51,9 @@ export default function AdoptionsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('Todos');
+
+  const FILTERS = ['Todos', 'Perros', 'Gatos', 'Cachorros', 'Cerca de mí'];
 
   // Modal state
   const [selectedPet, setSelectedPet] = useState(null);
@@ -94,8 +99,6 @@ export default function AdoptionsScreen() {
 
   // ─── Render card ──────────────────────────────────────────
   function renderPetCard({ item }) {
-    const st = statusConfig(item.status);
-
     return (
       <TouchableOpacity
         style={styles.card}
@@ -103,44 +106,47 @@ export default function AdoptionsScreen() {
         onPress={() => openDetail(item)}
       >
         {/* Image */}
-        {item.image_url ? (
-          <Image source={{ uri: item.image_url }} style={styles.cardImage} />
-        ) : (
-          <View style={styles.cardImagePlaceholder}>
-            <Text style={{ fontSize: 48 }}>🐾</Text>
+        <View style={styles.cardImageContainer}>
+          {item.image_url ? (
+            <Image source={{ uri: item.image_url }} style={styles.cardImage} />
+          ) : (
+            <View style={styles.cardImagePlaceholder}>
+              <Text style={{ fontSize: 64 }}>🐾</Text>
+            </View>
+          )}
+          <View style={styles.personalityBadge}>
+            <Text style={styles.personalityBadgeText}>
+              {item.personality || 'CARIÑOSO'}
+            </Text>
           </View>
-        )}
+        </View>
 
         {/* Content */}
         <View style={styles.cardContent}>
-          {/* Header row */}
           <View style={styles.cardHeaderRow}>
             <Text style={styles.cardName} numberOfLines={1}>
               {item.name || 'Sin nombre'}
             </Text>
-            <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-              <View style={[styles.statusDot, { backgroundColor: st.color }]} />
-              <Text style={[styles.statusText, { color: st.color }]}>{st.label}</Text>
-            </View>
+            <Text style={styles.cardAgeText}>
+              {formatAge(item.age)}
+            </Text>
           </View>
 
-          {/* Species & breed */}
-          <Text style={styles.cardMeta} numberOfLines={1}>
-            🐾 {item.species || 'Especie desconocida'}
-            {item.breed ? ` · ${item.breed}` : ''}
+          <Text style={styles.cardSpeciesText} numberOfLines={1}>
+            {item.species || 'Desconocida'} · {item.size || 'Mediano'}
           </Text>
 
-          {/* Age */}
-          <Text style={styles.cardMeta}>
-            🎂 {formatAge(item.age)}
-          </Text>
-
-          {/* Description */}
-          {item.description ? (
-            <Text style={styles.cardDesc} numberOfLines={2}>
-              {item.description}
+          <View style={styles.locationRow}>
+            <Ionicons name="location" size={14} color="#8BC34A" style={{ marginRight: 4 }} />
+            <Text style={styles.cardLocationText}>
+              {item.location || 'Refugio central'}
             </Text>
-          ) : null}
+          </View>
+
+          <TouchableOpacity style={styles.adoptBtn} onPress={() => openDetail(item)}>
+            <Ionicons name="heart" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+            <Text style={styles.adoptBtnText}>Quiero adoptar</Text>
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -151,15 +157,19 @@ export default function AdoptionsScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text variant="headlineSmall" style={styles.headerTitle}>
-            🧡 Adopciones
-          </Text>
-          <Text variant="bodyMedium" style={styles.headerSub}>
-            Encuentra tu compañero ideal
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerSuperTitle}>PETSWORLD</Text>
+            <Text style={styles.headerTitle}>Adopciones</Text>
+            <Text style={styles.headerSub}>
+              Cargando...
+            </Text>
+          </View>
+          <View style={styles.headerIconCircle}>
+            <Ionicons name="heart" size={20} color="#FFFFFF" />
+          </View>
         </View>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#FF6B35" />
+          <ActivityIndicator size="large" color="#3B6B2A" />
           <Text style={styles.loadingText}>Cargando mascotas...</Text>
         </View>
       </View>
@@ -170,12 +180,45 @@ export default function AdoptionsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text variant="headlineSmall" style={styles.headerTitle}>
-          🧡 Adopciones
-        </Text>
-        <Text variant="bodyMedium" style={styles.headerSub}>
-          {pets.length} {pets.length === 1 ? 'mascota disponible' : 'mascotas disponibles'}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerSuperTitle}>PETSWORLD</Text>
+          <Text style={styles.headerTitle}>Adopciones</Text>
+          <Text style={styles.headerSub}>
+            {pets.length} {pets.length === 1 ? 'mascota esperando familia' : 'mascotas esperando familia'}
+          </Text>
+        </View>
+        <View style={styles.headerIconCircle}>
+          <Ionicons name="heart" size={20} color="#FFFFFF" />
+        </View>
+      </View>
+
+      {/* Filters */}
+      <View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersContainer}
+        >
+          {FILTERS.map((f) => (
+            <TouchableOpacity
+              key={f}
+              style={[
+                styles.filterPill,
+                activeFilter === f ? styles.filterPillActive : styles.filterPillInactive,
+              ]}
+              onPress={() => setActiveFilter(f)}
+            >
+              <Text
+                style={[
+                  styles.filterPillText,
+                  activeFilter === f ? styles.filterPillTextActive : styles.filterPillTextInactive,
+                ]}
+              >
+                {f}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Error banner */}
@@ -331,23 +374,35 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 20,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    elevation: 6,
-    shadowColor: '#3B6B2A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerSuperTitle: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 2,
+    marginBottom: 4,
+    fontWeight: '700',
   },
   headerTitle: {
-    color: '#FDF5E6',
-    fontWeight: '800',
-    fontSize: 24,
+    fontFamily: 'serif',
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   headerSub: {
-    color: 'rgba(253,245,230,0.85)',
-    marginTop: 4,
-    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  headerIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   // Center / Loading
@@ -385,27 +440,81 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
 
+  // Filters
+  filtersContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  filterPill: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+  },
+  filterPillActive: {
+    backgroundColor: '#3B6B2A',
+  },
+  filterPillInactive: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E0D0',
+  },
+  filterPillText: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  filterPillTextActive: {
+    color: '#FFFFFF',
+  },
+  filterPillTextInactive: {
+    color: '#6B5A3E',
+  },
+
   // Card
   card: {
-    backgroundColor: '#FDF5E6',
-    borderRadius: 12,
-    borderWidth: 0.5,
-    borderColor: 'rgba(107,90,62,0.15)',
-    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginBottom: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
+  cardImageContainer: {
+    width: '100%',
+    height: 240,
+    position: 'relative',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     overflow: 'hidden',
-    elevation: 0,
   },
   cardImage: {
     width: '100%',
-    height: 200,
+    height: '100%',
     resizeMode: 'cover',
   },
   cardImagePlaceholder: {
     width: '100%',
-    height: 200,
-    backgroundColor: '#FFF7ED',
+    height: '100%',
+    backgroundColor: '#FDEEE6',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  personalityBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  personalityBadgeText: {
+    color: '#3B6B2A',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
   cardContent: {
     padding: 16,
@@ -413,26 +522,48 @@ const styles = StyleSheet.create({
   cardHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'baseline',
+    marginBottom: 4,
   },
   cardName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#6B5A3E',
+    fontFamily: 'serif',
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#3B6B2A',
     flex: 1,
     marginRight: 8,
   },
-  cardMeta: {
-    fontSize: 13,
+  cardAgeText: {
+    fontSize: 14,
     color: '#9B8B6E',
-    marginBottom: 4,
+    fontWeight: '600',
   },
-  cardDesc: {
-    fontSize: 13,
+  cardSpeciesText: {
+    fontSize: 14,
+    color: '#6B5A3E',
+    marginBottom: 8,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cardLocationText: {
     color: '#9B8B6E',
-    marginTop: 6,
-    lineHeight: 18,
+    fontSize: 13,
+  },
+  adoptBtn: {
+    backgroundColor: '#3B6B2A',
+    borderRadius: 12,
+    height: 48,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  adoptBtnText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 
   // Status badge

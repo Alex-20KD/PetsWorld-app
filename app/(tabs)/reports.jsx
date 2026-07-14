@@ -343,44 +343,57 @@ export default function ReportsScreen() {
     const color = statusColor(item.status);
     const bgColor = statusBgColor(item.status);
     return (
-      <Card style={styles.card} mode="elevated">
-        {item.photo_url ? (
-          <Card.Cover source={{ uri: item.photo_url }} style={styles.cardImage} />
-        ) : (
-          <View style={[styles.placeholderImage, { backgroundColor: bgColor }]}>
-            <Text style={{ fontSize: 48 }}>🐾</Text>
+      <View style={[styles.card, { backgroundColor: '#FDF5E6' }]}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#E8F5D6' }]} />
+        
+        <View style={styles.cardImageContainer}>
+          {item.photo_url ? (
+            <Image source={{ uri: item.photo_url }} style={styles.cardImage} />
+          ) : (
+            <View style={[styles.placeholderGradient, { backgroundColor: '#E8F5D6' }]}>
+              <View style={styles.placeholderCircle}>
+                <Text style={{ fontSize: 32 }}>🐾</Text>
+              </View>
+            </View>
+          )}
+          
+          <View style={[styles.statusBadge, { backgroundColor: bgColor }]}>
+            <Text style={[styles.statusBadgeText, { color }]}>
+              {statusLabel(item.status)}
+            </Text>
           </View>
-        )}
-        <Card.Content style={styles.cardContent}>
-          <View style={styles.cardHeader}>
-            <Text variant="titleMedium" style={styles.cardTitle} numberOfLines={1}>
+        </View>
+
+        <View style={styles.cardContent}>
+          <View style={styles.cardHeaderRow}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
               {item.pet_name || 'Sin nombre'}
             </Text>
-            <View style={[styles.statusBadge, { backgroundColor: bgColor }]}>
-              <Text style={[styles.statusBadgeText, { color }]}>
-                {statusLabel(item.status)}
-              </Text>
+            <View style={styles.speciesPill}>
+              <Text style={styles.speciesPillText}>🐾 {item.species || 'Otro'}</Text>
             </View>
           </View>
 
-          <Text variant="bodyMedium" style={styles.cardSpecies}>
-            🐾 {item.species || 'Especie desconocida'}
-          </Text>
-
           {item.description ? (
-            <Text variant="bodySmall" style={styles.cardDesc} numberOfLines={2}>
+            <Text style={styles.cardDesc} numberOfLines={2}>
               {item.description}
             </Text>
           ) : null}
 
-          <Text variant="bodySmall" style={styles.cardLocation}>
-            📍 {item.location_description || 'Ubicación no especificada'}
-          </Text>
+          <View style={styles.locationRow}>
+            <Text style={styles.locationIcon}>📍</Text>
+            <Text style={styles.cardLocation}>
+              {item.location_description || 'Ubicación no especificada'}
+            </Text>
+          </View>
 
           {(item.reporter_name || item.user?.full_name) ? (
-            <Text variant="bodySmall" style={styles.cardReporter}>
-              👤 {item.reporter_name || item.user?.full_name}
-            </Text>
+            <View style={styles.reporterRow}>
+              <Text style={styles.reporterIcon}>👤</Text>
+              <Text style={styles.cardReporter}>
+                {item.reporter_name || item.user?.full_name}
+              </Text>
+            </View>
           ) : null}
 
           {/* Botones del propietario */}
@@ -402,8 +415,8 @@ export default function ReportsScreen() {
               </TouchableOpacity>
             </View>
           )}
-        </Card.Content>
-      </Card>
+        </View>
+      </View>
     );
   }
 
@@ -414,12 +427,16 @@ export default function ReportsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text variant="headlineSmall" style={styles.headerTitle}>
-          📋 Reportes
-        </Text>
-        <Text variant="bodyMedium" style={styles.headerSub}>
-          {pagination.total} mascotas reportadas
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerSuperTitle}>PETSWORLD</Text>
+          <Text style={styles.headerTitle}>Reportes</Text>
+          <Text style={styles.headerSub}>
+            {pagination.total} mascotas reportadas
+          </Text>
+        </View>
+        <View style={styles.headerIconCircle}>
+          <IconButton icon="filter-variant" iconColor="#FFFFFF" size={20} style={{ margin: 0 }} />
+        </View>
       </View>
 
       {/* Mensaje de éxito temporal */}
@@ -465,7 +482,15 @@ export default function ReportsScreen() {
       )}
 
       {/* FAB */}
-      <FAB icon="plus" style={styles.fab} color="#FFFFFF" onPress={openModal} />
+      <FAB
+        icon="plus"
+        label="Reportar"
+        style={styles.fab}
+        color="#FFFFFF"
+        onPress={openModal}
+        uppercase={false}
+        labelStyle={{ fontWeight: 'bold' }}
+      />
 
       {/* ─── Modal de creación ───────────────────────────── */}
       <Modal
@@ -911,15 +936,36 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: '#3B6B2A',
+    backgroundColor: '#E8834A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerSuperTitle: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 2,
+    marginBottom: 4,
+    fontWeight: '700',
   },
   headerTitle: {
-    fontWeight: '800',
-    color: '#FDF5E6',
+    fontFamily: 'serif',
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   headerSub: {
-    color: '#FDF5E6',
-    marginTop: 4,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  headerIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   successBanner: {
     backgroundColor: '#E8F5E9',
@@ -965,77 +1011,126 @@ const styles = StyleSheet.create({
   // ─── Card ──────────────────────────────────────────────
   card: {
     marginBottom: 16,
-    borderRadius: 12,
+    borderRadius: 16,
+    overflow: 'hidden',
     backgroundColor: '#FDF5E6',
-    borderWidth: 0.5,
-    borderColor: 'rgba(107,90,62,0.15)',
-    elevation: 0,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  cardImageContainer: {
+    height: 180,
+    width: '100%',
+    position: 'relative',
   },
   cardImage: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    height: 180,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
-  placeholderImage: {
-    height: 120,
+  placeholderGradient: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+  },
+  placeholderCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   cardContent: {
-    paddingTop: 12,
-    paddingBottom: 16,
+    padding: 16,
   },
-  cardHeader: {
+  cardHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   cardTitle: {
-    fontWeight: '700',
-    color: '#6B5A3E',
+    fontFamily: 'serif',
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#3B6B2A',
     flex: 1,
     marginRight: 8,
   },
-  statusBadge: {
+  speciesPill: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  cardSpecies: {
-    color: '#9B8B6E',
-    marginBottom: 4,
+  speciesPillText: {
+    fontSize: 12,
+    color: '#6B5A3E',
+    fontWeight: '600',
   },
   cardDesc: {
     color: '#9B8B6E',
+    fontSize: 13,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
   },
+  locationIcon: {
+    color: '#E8834A',
+    marginRight: 6,
+    fontSize: 14,
+  },
   cardLocation: {
-    color: '#5A8A3C',
-    fontSize: 12,
-    marginBottom: 2,
+    color: '#E8834A',
+    fontSize: 13,
+    flex: 1,
+  },
+  reporterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  reporterIcon: {
+    color: '#9B8B6E',
+    marginRight: 6,
+    fontSize: 14,
   },
   cardReporter: {
     color: '#9B8B6E',
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 13,
+    flex: 1,
   },
 
   // ─── FAB ───────────────────────────────────────────────
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: 24,
+    right: 16,
+    bottom: 20,
     backgroundColor: '#E8834A',
     borderRadius: 28,
-    elevation: 8,
-    shadowColor: '#FF6B35',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#E8834A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 10,

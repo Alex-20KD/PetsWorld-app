@@ -45,22 +45,24 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      {/* Fondos */}
+      <View style={styles.bgCircleTop} />
+      <View style={styles.bgCircleCenter} />
+      <View style={styles.bgCircleBottom} />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header decorativo */}
-        <View style={styles.headerContainer}>
-          <View style={styles.iconCircle}>
-            <Text style={styles.iconEmoji}>🐾</Text>
+        <View style={styles.card}>
+          {/* Header decorativo */}
+          <View style={styles.headerContainer}>
+            <View style={styles.iconCircle}>
+              <Text style={styles.iconEmoji}>🐾</Text>
+            </View>
+            <Text style={styles.title}>PetsWorld</Text>
+            <Text style={styles.subtitle}>Encuentra a tu mascota perdida</Text>
           </View>
-          <Text variant="headlineLarge" style={styles.title}>
-            PetsWorld
-          </Text>
-          <Text variant="bodyLarge" style={styles.subtitle}>
-            Encuentra a tu mascota perdida
-          </Text>
-        </View>
 
         {/* Formulario */}
         <View style={styles.formContainer}>
@@ -72,7 +74,8 @@ export default function LoginScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
-            left={<TextInput.Icon icon="email" />}
+            placeholderTextColor="#9B8B6E"
+            left={<TextInput.Icon icon="email" color="#9B8B6E" />}
             style={styles.input}
             outlineStyle={styles.inputOutline}
             disabled={loading}
@@ -84,10 +87,12 @@ export default function LoginScreen() {
             onChangeText={setPassword}
             mode="outlined"
             secureTextEntry={!showPassword}
-            left={<TextInput.Icon icon="lock" />}
+            placeholderTextColor="#9B8B6E"
+            left={<TextInput.Icon icon="lock" color="#9B8B6E" />}
             right={
               <TextInput.Icon
                 icon={showPassword ? 'eye-off' : 'eye'}
+                color="#9B8B6E"
                 onPress={() => setShowPassword(!showPassword)}
               />
             }
@@ -138,6 +143,11 @@ export default function LoginScreen() {
             </Link>
           </View>
         </View>
+        </View>
+
+        <Text style={styles.footerText}>
+          PetsWorld v1.0.0 - Hecho con cariño para los que buscan
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -147,49 +157,91 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F0E8',
+    position: 'relative',
+  },
+  bgCircleTop: {
+    position: 'absolute',
+    top: -60,
+    left: -60,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(90,138,60,0.25)',
+  },
+  bgCircleCenter: {
+    position: 'absolute',
+    top: '30%',
+    right: -80,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(245,240,232,0.8)',
+    zIndex: 1,
+  },
+  bgCircleBottom: {
+    position: 'absolute',
+    bottom: -40,
+    right: -40,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(232,131,74,0.2)',
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
     paddingVertical: 40,
+    zIndex: 2,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 32,
+    marginHorizontal: 24,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
   },
   iconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(59,107,42,0.1)',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#E8F5D6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   iconEmoji: {
-    fontSize: 48,
+    fontSize: 32,
   },
   title: {
-    fontWeight: '800',
+    fontFamily: 'serif',
+    fontSize: 32,
+    fontWeight: 'bold',
     color: '#3B6B2A',
-    marginBottom: 8,
-    letterSpacing: -0.5,
+    marginBottom: 4,
   },
   subtitle: {
+    fontSize: 14,
     color: '#9B8B6E',
-    letterSpacing: 0.2,
   },
   formContainer: {
     width: '100%',
   },
   input: {
     marginBottom: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9F7F4',
   },
   inputOutline: {
     borderRadius: 12,
-    borderColor: 'rgba(107,90,62,0.2)',
+    borderWidth: 1,
+    borderColor: '#E8E0D0',
   },
   errorText: {
     fontSize: 14,
@@ -209,9 +261,10 @@ const styles = StyleSheet.create({
     height: 52,
   },
   buttonLabel: {
+    fontFamily: 'serif',
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   linkContainer: {
     flexDirection: 'row',
@@ -222,7 +275,14 @@ const styles = StyleSheet.create({
     color: '#9B8B6E',
   },
   linkAction: {
-    color: '#3B6B2A',
+    color: '#E8834A',
     fontWeight: '700',
+  },
+  footerText: {
+    marginTop: 32,
+    fontSize: 12,
+    color: '#9B8B6E',
+    textAlign: 'center',
+    paddingHorizontal: 24,
   },
 });
