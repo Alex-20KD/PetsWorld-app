@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 const TOKEN_KEY = 'petsworld_token';
 
 const api = axios.create({
-  baseURL: 'http://192.168.100.186:8000/api',
+  baseURL: 'http://192.168.1.9:8000/api', // <-- IP actualizada
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',

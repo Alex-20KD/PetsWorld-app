@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
 } from 'react-native';
-import MapView, { Circle, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 
@@ -28,6 +28,26 @@ import MapActionButtons from '../../components/map/MapActionButtons';
 
 // ─── Custom map style ───────────────────────────────────────
 import mapStyleLight from '../../constants/mapStyle';
+
+const NATURAL_MAP_STYLE = [
+  { elementType: 'geometry', stylers: [{ color: '#f5f0e8' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#6b5a3e' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#fdf5e6' }] },
+  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#c9b99a' }] },
+  { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#dde8c8' }] },
+  { featureType: 'landscape.man_made', elementType: 'geometry', stylers: [{ color: '#e8e0d0' }] },
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#b8d4a0' }] },
+  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#4a7c3f' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#e0d5c0' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#f5d896' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#e8c46a' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#a8d4e6' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4a90a4' }] },
+  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+];
 
 // ─── Constants ───────────────────────────────────────────────
 const defaultRegion = {
@@ -392,24 +412,39 @@ export default function MapScreen() {
         initialRegion={defaultRegion}
         showsUserLocation={hasGps}
         showsMyLocationButton={false}
-        customMapStyle={mapStyleLight}
+        customMapStyle={NATURAL_MAP_STYLE}
       >
         {filteredReports.map((r) => (
           <React.Fragment key={r.id}>
-            <PetMarker
-              report={r}
-              onPress={handleMarkerPress}
-              isSelected={selectedReport?.id === r.id}
-            />
+            <Marker
+              key={r.id}
+              coordinate={{ latitude: parseFloat(r.latitude), longitude: parseFloat(r.longitude) }}
+              onPress={() => handleMarkerPress(r)}
+            >
+              <View style={{
+                backgroundColor: r.status === 'found' ? '#4CAF50' : r.status === 'cancelled' ? '#9E9E9E' : '#FF6B35',
+                borderRadius: 20,
+                padding: 6,
+                borderWidth: 2,
+                borderColor: 'white',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 3,
+                elevation: 5,
+              }}>
+                <Text style={{ fontSize: 16 }}>🐾</Text>
+              </View>
+            </Marker>
             <Circle
               center={{
                 latitude: parseFloat(r.latitude),
                 longitude: parseFloat(r.longitude),
               }}
               radius={(r.radius_km || 5) * 1000}
-              fillColor="rgba(45, 95, 62, 0.08)"
-              strokeColor="rgba(45, 95, 62, 0.3)"
-              strokeWidth={1.5}
+              fillColor="rgba(139, 195, 74, 0.15)"
+              strokeColor="rgba(139, 195, 74, 0.6)"
+              strokeWidth={2}
             />
           </React.Fragment>
         ))}
