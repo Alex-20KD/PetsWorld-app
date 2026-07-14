@@ -4,6 +4,7 @@ import { Text, Button, Avatar, Card, Divider, ActivityIndicator } from 'react-na
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ProfileScreen() {
   const { user, isLoading, logout } = useAuth();
@@ -47,11 +48,10 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Fondo del Header */}
-      <View style={styles.headerBackground} />
-
-      {/* Info de Perfil superpuesta */}
-      <View style={styles.profileInfoContainer}>
+      <LinearGradient
+        colors={['#F5F0E8', '#EDE8DC']}
+        style={styles.profileTopSection}
+      >
         <View style={styles.avatarContainer}>
           <Avatar.Text
             size={96}
@@ -74,7 +74,7 @@ export default function ProfileScreen() {
             {getRolLabel(user?.role || user?.rol)}
           </Text>
         </View>
-      </View>
+      </LinearGradient>
 
       <Divider style={styles.divider} />
 
@@ -170,16 +170,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerBackground: {
-    height: 140,
-    backgroundColor: '#3B6B2A',
+  profileTopSection: {
+    alignItems: 'center',
+    paddingTop: 64,
+    paddingBottom: 24,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-  },
-  profileInfoContainer: {
-    alignItems: 'center',
-    marginTop: -48,
-    marginBottom: 8,
   },
   avatarContainer: {
     position: 'relative',

@@ -16,6 +16,7 @@ import {
   IconButton,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import adoptionApi from '../../services/adoptionApi';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -110,9 +111,12 @@ export default function AdoptionsScreen() {
           {item.image_url ? (
             <Image source={{ uri: item.image_url }} style={styles.cardImage} />
           ) : (
-            <View style={styles.cardImagePlaceholder}>
-              <Text style={{ fontSize: 64 }}>🐾</Text>
-            </View>
+            <LinearGradient
+              colors={['#FDEEE6', '#FDF5E6']}
+              style={styles.cardImagePlaceholder}
+            >
+              <Text style={{ fontSize: 48 }}>🐾</Text>
+            </LinearGradient>
           )}
           <View style={styles.personalityBadge}>
             <Text style={styles.personalityBadgeText}>

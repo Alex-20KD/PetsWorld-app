@@ -4,6 +4,7 @@ import { TextInput, Button, Text, HelperText, ActivityIndicator } from 'react-na
 import { Link, useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -45,10 +46,13 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Fondos */}
-      <View style={styles.bgCircleTop} />
-      <View style={styles.bgCircleCenter} />
-      <View style={styles.bgCircleBottom} />
+      <LinearGradient
+        colors={['rgba(90,138,60,0.3)', '#F0EDE4', 'rgba(232,131,74,0.2)']}
+        locations={[0, 0.5, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -158,34 +162,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F0E8',
     position: 'relative',
-  },
-  bgCircleTop: {
-    position: 'absolute',
-    top: -60,
-    left: -60,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(90,138,60,0.25)',
-  },
-  bgCircleCenter: {
-    position: 'absolute',
-    top: '30%',
-    right: -80,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(245,240,232,0.8)',
-    zIndex: 1,
-  },
-  bgCircleBottom: {
-    position: 'absolute',
-    bottom: -40,
-    right: -40,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: 'rgba(232,131,74,0.2)',
   },
   scrollContent: {
     flexGrow: 1,

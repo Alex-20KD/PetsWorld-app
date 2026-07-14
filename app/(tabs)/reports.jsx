@@ -26,6 +26,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useReports } from '../../context/ReportsContext';
 import { useAuth } from '../../context/AuthContext';
@@ -343,18 +344,22 @@ export default function ReportsScreen() {
     const color = statusColor(item.status);
     const bgColor = statusBgColor(item.status);
     return (
-      <View style={[styles.card, { backgroundColor: '#FDF5E6' }]}>
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#E8F5D6' }]} />
-        
+      <LinearGradient
+        colors={['#FFFFFF', '#F5F0E8']}
+        style={[styles.card, { padding: 0, overflow: 'hidden' }]}
+      >
         <View style={styles.cardImageContainer}>
           {item.photo_url ? (
             <Image source={{ uri: item.photo_url }} style={styles.cardImage} />
           ) : (
-            <View style={[styles.placeholderGradient, { backgroundColor: '#E8F5D6' }]}>
+            <LinearGradient
+              colors={['#E8F5D6', '#F5EED8']}
+              style={styles.placeholderGradient}
+            >
               <View style={styles.placeholderCircle}>
                 <Text style={{ fontSize: 32 }}>🐾</Text>
               </View>
-            </View>
+            </LinearGradient>
           )}
           
           <View style={[styles.statusBadge, { backgroundColor: bgColor }]}>
@@ -416,7 +421,7 @@ export default function ReportsScreen() {
             </View>
           )}
         </View>
-      </View>
+      </LinearGradient>
     );
   }
 
