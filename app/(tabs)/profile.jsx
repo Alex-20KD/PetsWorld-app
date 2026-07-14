@@ -157,7 +157,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5FA',
+    backgroundColor: '#F5F0E8',
   },
   content: {
     paddingBottom: 40,
@@ -171,18 +171,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 64,
     paddingBottom: 24,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#3B6B2A',
   },
   avatarContainer: {
     position: 'relative',
     marginBottom: 16,
   },
   avatar: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: '#F5F0E8',
   },
   avatarLabel: {
     fontSize: 36,
     fontWeight: '700',
+    color: '#3B6B2A',
   },
   statusDot: {
     position: 'absolute',
@@ -197,21 +198,21 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontWeight: '800',
-    color: '#1A1A2E',
+    color: '#FDF5E6',
     marginBottom: 4,
   },
   userEmail: {
-    color: '#6B7280',
+    color: '#FDF5E6',
     marginBottom: 12,
   },
   rolBadge: {
-    backgroundColor: '#E8E6FF',
+    backgroundColor: 'rgba(253, 245, 230, 0.2)',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
   },
   rolText: {
-    color: '#6C63FF',
+    color: '#FDF5E6',
     fontWeight: '700',
     fontSize: 13,
   },
@@ -224,13 +225,15 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontWeight: '700',
-    color: '#1A1A2E',
+    color: '#6B5A3E',
     marginBottom: 12,
   },
   infoCard: {
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    elevation: 2,
+    borderRadius: 12,
+    backgroundColor: '#FDF5E6',
+    borderWidth: 0.5,
+    borderColor: 'rgba(107,90,62,0.15)',
+    elevation: 0,
   },
   infoRow: {
     flexDirection: 'row',
@@ -239,28 +242,23 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   infoLabel: {
-    color: '#6B7280',
+    color: '#9B8B6E',
   },
   infoValue: {
-    color: '#1A1A2E',
+    color: '#6B5A3E',
     fontWeight: '600',
     flexShrink: 1,
     textAlign: 'right',
     maxWidth: '55%',
   },
   infoDivider: {
-    backgroundColor: '#F0EFF5',
+    backgroundColor: 'rgba(107,90,62,0.15)',
   },
   logoutButton: {
     marginHorizontal: 20,
     marginTop: 32,
     borderRadius: 12,
-    backgroundColor: '#FF6B6B',
-    elevation: 4,
-    shadowColor: '#FF6B6B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    backgroundColor: '#F5D0C0',
   },
   logoutContent: {
     height: 52,
@@ -268,10 +266,11 @@ const styles = StyleSheet.create({
   logoutLabel: {
     fontSize: 16,
     fontWeight: '700',
+    color: '#C4521A',
   },
   version: {
     textAlign: 'center',
-    color: '#9E9E9E',
+    color: '#9B8B6E',
     marginTop: 24,
   },
 });

@@ -322,30 +322,30 @@ export default function AdoptionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F7FC',
+    backgroundColor: '#F5F0E8',
   },
 
   // Header
   header: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#3B6B2A',
     paddingTop: 56,
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     elevation: 6,
-    shadowColor: '#FF6B35',
+    shadowColor: '#3B6B2A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
   headerTitle: {
-    color: '#FFFFFF',
+    color: '#FDF5E6',
     fontWeight: '800',
     fontSize: 24,
   },
   headerSub: {
-    color: 'rgba(255,255,255,0.85)',
+    color: 'rgba(253,245,230,0.85)',
     marginTop: 4,
     fontSize: 14,
   },
@@ -387,15 +387,13 @@ const styles = StyleSheet.create({
 
   // Card
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: '#FDF5E6',
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: 'rgba(107,90,62,0.15)',
     marginBottom: 16,
     overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    elevation: 0,
   },
   cardImage: {
     width: '100%',
@@ -421,18 +419,18 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#6B5A3E',
     flex: 1,
     marginRight: 8,
   },
   cardMeta: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#9B8B6E',
     marginBottom: 4,
   },
   cardDesc: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#9B8B6E',
     marginTop: 6,
     lineHeight: 18,
   },
@@ -467,13 +465,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    color: '#1F2937',
+    color: '#6B5A3E',
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 8,
   },
   emptySubtitle: {
-    color: '#9CA3AF',
+    color: '#9B8B6E',
     textAlign: 'center',
   },
 
@@ -484,7 +482,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F0E8',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '92%',
@@ -542,7 +540,7 @@ const styles = StyleSheet.create({
   modalPetName: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#6B5A3E',
     flex: 1,
     marginRight: 12,
   },
@@ -563,7 +561,7 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#9B8B6E',
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -571,7 +569,7 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 15,
-    color: '#1F2937',
+    color: '#6B5A3E',
     fontWeight: '600',
   },
 
@@ -579,13 +577,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#6B5A3E',
     paddingHorizontal: 20,
     marginBottom: 8,
   },
   descriptionText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#9B8B6E',
     lineHeight: 22,
     paddingHorizontal: 20,
     marginBottom: 24,
@@ -593,19 +591,15 @@ const styles = StyleSheet.create({
 
   // Contact button
   contactBtn: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#3B6B2A',
     marginHorizontal: 20,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
     elevation: 4,
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   contactBtnText: {
-    color: '#FFFFFF',
+    color: '#FDF5E6',
     fontSize: 17,
     fontWeight: '700',
   },

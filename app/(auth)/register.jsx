@@ -56,7 +56,7 @@ export default function RegisterScreen() {
         {/* Header decorativo */}
         <View style={styles.headerContainer}>
           <View style={styles.iconCircle}>
-            <Text style={styles.iconEmoji}>🐶</Text>
+            <Text style={styles.iconEmoji}>🐾</Text>
           </View>
           <Text variant="headlineLarge" style={styles.title}>
             Crear Cuenta
@@ -157,7 +157,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F0E8',
   },
   scrollContent: {
     flexGrow: 1,
@@ -173,27 +173,22 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#FFE0E0',
+    backgroundColor: 'rgba(59,107,42,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    shadowColor: '#FF6B6B',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
   },
   iconEmoji: {
     fontSize: 48,
   },
   title: {
     fontWeight: '800',
-    color: '#1A1A2E',
+    color: '#3B6B2A',
     marginBottom: 8,
     letterSpacing: -0.5,
   },
   subtitle: {
-    color: '#6B7280',
+    color: '#9B8B6E',
     letterSpacing: 0.2,
   },
   formContainer: {
@@ -201,11 +196,11 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   inputOutline: {
     borderRadius: 12,
-    borderColor: '#D1CFE2',
+    borderColor: 'rgba(107,90,62,0.2)',
   },
   errorText: {
     fontSize: 14,
@@ -214,12 +209,7 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 8,
     borderRadius: 12,
-    backgroundColor: '#FF6B6B',
-    elevation: 4,
-    shadowColor: '#FF6B6B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    backgroundColor: '#3B6B2A',
   },
   buttonContent: {
     height: 52,
@@ -235,10 +225,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   linkText: {
-    color: '#6B7280',
+    color: '#9B8B6E',
   },
   linkAction: {
-    color: '#6C63FF',
+    color: '#3B6B2A',
     fontWeight: '700',
   },
 });

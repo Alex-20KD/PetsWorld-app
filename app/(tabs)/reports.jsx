@@ -317,10 +317,17 @@ export default function ReportsScreen() {
 
   // ─── Helpers ────────────────────────────────────────────
   function statusColor(s) {
-    if (s === 'active' || s === 'perdido' || s === 'en_busqueda') return '#FF9800';
-    if (s === 'found' || s === 'encontrado') return '#4CAF50';
-    if (s === 'cancelled' || s === 'cancelado') return '#9E9E9E';
-    return '#FF6B35';
+    if (s === 'active' || s === 'perdido' || s === 'en_busqueda') return '#C4521A';
+    if (s === 'found' || s === 'encontrado') return '#3B6B2A';
+    if (s === 'cancelled' || s === 'cancelado') return '#6B6B6B';
+    return '#C4521A';
+  }
+  
+  function statusBgColor(s) {
+    if (s === 'active' || s === 'perdido' || s === 'en_busqueda') return '#FEE9DA';
+    if (s === 'found' || s === 'encontrado') return '#E4F2D6';
+    if (s === 'cancelled' || s === 'cancelado') return '#EBEBEB';
+    return '#FEE9DA';
   }
 
   function statusLabel(s) {
@@ -334,12 +341,13 @@ export default function ReportsScreen() {
   // ─── Render card ────────────────────────────────────────
   function renderItem({ item }) {
     const color = statusColor(item.status);
+    const bgColor = statusBgColor(item.status);
     return (
       <Card style={styles.card} mode="elevated">
         {item.photo_url ? (
           <Card.Cover source={{ uri: item.photo_url }} style={styles.cardImage} />
         ) : (
-          <View style={[styles.placeholderImage, { backgroundColor: color + '18' }]}>
+          <View style={[styles.placeholderImage, { backgroundColor: bgColor }]}>
             <Text style={{ fontSize: 48 }}>🐾</Text>
           </View>
         )}
@@ -348,7 +356,7 @@ export default function ReportsScreen() {
             <Text variant="titleMedium" style={styles.cardTitle} numberOfLines={1}>
               {item.pet_name || 'Sin nombre'}
             </Text>
-            <View style={[styles.statusBadge, { backgroundColor: color + '20' }]}>
+            <View style={[styles.statusBadge, { backgroundColor: bgColor }]}>
               <Text style={[styles.statusBadgeText, { color }]}>
                 {statusLabel(item.status)}
               </Text>
@@ -365,15 +373,9 @@ export default function ReportsScreen() {
             </Text>
           ) : null}
 
-          {item.location_description ? (
-            <Text variant="bodySmall" style={styles.cardLocation}>
-              📍 {item.location_description}
-            </Text>
-          ) : item.latitude && item.longitude ? (
-            <Text variant="bodySmall" style={styles.cardLocation}>
-              📍 {parseFloat(item.latitude).toFixed(4)}, {parseFloat(item.longitude).toFixed(4)}
-            </Text>
-          ) : null}
+          <Text variant="bodySmall" style={styles.cardLocation}>
+            📍 {item.location_description || 'Ubicación no especificada'}
+          </Text>
 
           {(item.reporter_name || item.user?.full_name) ? (
             <Text variant="bodySmall" style={styles.cardReporter}>
@@ -903,25 +905,20 @@ const styles = StyleSheet.create({
   // ─── Container & Header ─────────────────────────────────
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F5F0E8',
   },
   header: {
     paddingTop: 56,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: '#3B6B2A',
   },
   headerTitle: {
     fontWeight: '800',
-    color: '#1A1A2E',
+    color: '#FDF5E6',
   },
   headerSub: {
-    color: '#6B7280',
+    color: '#FDF5E6',
     marginTop: 4,
   },
   successBanner: {
@@ -956,25 +953,23 @@ const styles = StyleSheet.create({
     fontSize: 64,
   },
   emptyTitle: {
-    color: '#6B7280',
+    color: '#6B5A3E',
     marginTop: 12,
     textAlign: 'center',
   },
   emptySubtitle: {
-    color: '#9E9E9E',
+    color: '#9B8B6E',
     marginTop: 4,
   },
 
   // ─── Card ──────────────────────────────────────────────
   card: {
     marginBottom: 16,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    borderRadius: 12,
+    backgroundColor: '#FDF5E6',
+    borderWidth: 0.5,
+    borderColor: 'rgba(107,90,62,0.15)',
+    elevation: 0,
   },
   cardImage: {
     borderTopLeftRadius: 16,
@@ -1000,7 +995,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontWeight: '700',
-    color: '#1A1A2E',
+    color: '#6B5A3E',
     flex: 1,
     marginRight: 8,
   },
@@ -1014,20 +1009,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   cardSpecies: {
-    color: '#6B7280',
+    color: '#9B8B6E',
     marginBottom: 4,
   },
   cardDesc: {
-    color: '#9E9E9E',
+    color: '#9B8B6E',
     marginBottom: 4,
   },
   cardLocation: {
-    color: '#FF6B35',
+    color: '#5A8A3C',
     fontSize: 12,
     marginBottom: 2,
   },
   cardReporter: {
-    color: '#6B7280',
+    color: '#9B8B6E',
     fontSize: 12,
     marginTop: 4,
   },
@@ -1037,7 +1032,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 24,
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#E8834A',
     borderRadius: 28,
     elevation: 8,
     shadowColor: '#FF6B35',
@@ -1054,7 +1049,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     height: '92%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F0E8',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
@@ -1077,17 +1072,18 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontWeight: '700',
-    color: '#1A1A2E',
+    color: '#6B5A3E',
   },
   modalInput: {
     marginBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   inputOutline: {
     borderRadius: 12,
+    borderColor: 'rgba(107,90,62,0.2)',
   },
   fieldLabel: {
-    color: '#1A1A2E',
+    color: '#6B5A3E',
     fontWeight: '700',
     marginBottom: 10,
   },
@@ -1316,17 +1312,12 @@ const styles = StyleSheet.create({
 
   // ─── Submit button ─────────────────────────────────────
   submitBtn: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#3B6B2A',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 16,
     marginBottom: 24,
-    elevation: 4,
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   submitBtnDisabled: {
     opacity: 0.6,
@@ -1400,12 +1391,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
-    backgroundColor: '#FF6B35',
-    elevation: 4,
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    backgroundColor: '#3B6B2A',
   },
   editSaveText: {
     color: '#FFFFFF',
