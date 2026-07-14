@@ -995,6 +995,9 @@ const styles = StyleSheet.create({
   list: {
     padding: 16,
     paddingBottom: 100,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 600,
   },
   emptyState: {
     alignItems: 'center',

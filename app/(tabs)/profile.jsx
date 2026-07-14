@@ -164,6 +164,9 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 600,
   },
   center: {
     flex: 1,

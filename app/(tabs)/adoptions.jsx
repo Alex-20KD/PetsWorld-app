@@ -442,6 +442,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 24,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 600,
   },
 
   // Filters
