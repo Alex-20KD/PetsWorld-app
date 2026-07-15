@@ -3,8 +3,15 @@ import { View, ScrollView } from 'react-native';
 import { Text, Button, Avatar, Card, Divider, ActivityIndicator } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const IS_SMALL = SCREEN_W < 375;
+const IS_TABLET = SCREEN_W >= 768;
+const CONTENT_MAX_WIDTH = IS_TABLET ? 600 : SCREEN_W;
+const HORIZONTAL_PADDING = IS_TABLET ? 32 : IS_SMALL ? 12 : 16;
+const IS_LANDSCAPE = SCREEN_W > SCREEN_H;
 
 export default function ProfileScreen() {
   const { user, isLoading, logout } = useAuth();
@@ -50,7 +57,7 @@ export default function ProfileScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <LinearGradient
         colors={['#F5F0E8', '#EDE8DC']}
-        style={styles.profileTopSection}
+        style={[styles.profileTopSection, { flexDirection: IS_LANDSCAPE ? 'row' : 'column', gap: IS_LANDSCAPE ? 24 : 0, paddingHorizontal: HORIZONTAL_PADDING }]}
       >
         <View style={styles.avatarContainer}>
           <Avatar.Text
@@ -62,17 +69,19 @@ export default function ProfileScreen() {
           <View style={styles.statusDot} />
         </View>
 
-        <Text style={styles.userName}>
-          {user?.full_name || user?.name || 'Usuario'}
-        </Text>
-        <Text style={styles.userEmail}>
-          {user?.email || 'Sin correo'}
-        </Text>
-
-        <View style={styles.rolBadge}>
-          <Text style={styles.rolText}>
-            {getRolLabel(user?.role || user?.rol)}
+        <View style={{ alignItems: IS_LANDSCAPE ? 'flex-start' : 'center', justifyContent: 'center' }}>
+          <Text style={styles.userName}>
+            {user?.full_name || user?.name || 'Usuario'}
           </Text>
+          <Text style={styles.userEmail}>
+            {user?.email || 'Sin correo'}
+          </Text>
+
+          <View style={styles.rolBadge}>
+            <Text style={styles.rolText}>
+              {getRolLabel(user?.role || user?.rol)}
+            </Text>
+          </View>
         </View>
       </LinearGradient>
 
@@ -235,7 +244,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   infoSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: HORIZONTAL_PADDING,
     paddingTop: 24,
   },
   sectionTitle: {
@@ -249,12 +258,16 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: 'rgba(107,90,62,0.15)',
     elevation: 0,
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    width: '100%',
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 14,
+    flexWrap: 'wrap',
   },
   infoLabel: {
     color: '#9B8B6E',
@@ -276,10 +289,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8834A',
   },
   logoutContent: {
-    height: 52,
+    minHeight: 48,
   },
   logoutLabel: {
-    fontSize: 16,
+    fontSize: IS_SMALL ? 14 : IS_TABLET ? 18 : 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },

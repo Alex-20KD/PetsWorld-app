@@ -3,8 +3,14 @@ import { View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { TextInput, Button, Text, HelperText, ActivityIndicator } from 'react-native-paper';
 import { Link, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const IS_SMALL = SCREEN_W < 375;
+const IS_TABLET = SCREEN_W >= 768;
+const CONTENT_MAX_WIDTH = IS_TABLET ? 600 : SCREEN_W;
+const HORIZONTAL_PADDING = IS_TABLET ? 32 : IS_SMALL ? 12 : 16;
 
 export default function RegisterScreen() {
   const { register } = useAuth();
@@ -179,14 +185,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingVertical: 40,
+    paddingHorizontal: HORIZONTAL_PADDING,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    marginHorizontal: 20,
     alignSelf: 'center',
     width: '100%',
-    maxWidth: 450,
+    maxWidth: 480,
     padding: 32,
     elevation: 4,
     shadowColor: '#000',
@@ -218,7 +224,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: IS_SMALL ? 14 : IS_TABLET ? 18 : 16,
     color: '#9B8B6E',
   },
   formContainer: {
@@ -243,11 +249,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B6B2A',
   },
   buttonContent: {
-    height: 52,
+    minHeight: 48,
   },
   buttonLabel: {
     fontFamily: 'serif',
-    fontSize: 16,
+    fontSize: IS_SMALL ? 14 : IS_TABLET ? 18 : 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },

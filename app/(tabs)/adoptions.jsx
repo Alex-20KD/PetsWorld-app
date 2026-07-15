@@ -19,8 +19,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import adoptionApi from '../../services/adoptionApi';
 
-const { width: SCREEN_W } = Dimensions.get('window');
-
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const IS_SMALL = SCREEN_W < 375;
+const IS_TABLET = SCREEN_W >= 768;
+const CONTENT_MAX_WIDTH = IS_TABLET ? 600 : SCREEN_W;
+const HORIZONTAL_PADDING = IS_TABLET ? 32 : IS_SMALL ? 12 : 16;
 // ─── Helpers ──────────────────────────────────────────────────
 function formatAge(ageInMonths) {
   if (ageInMonths == null) return 'Edad desconocida';
@@ -102,7 +105,7 @@ export default function AdoptionsScreen() {
   function renderPetCard({ item }) {
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, { width: IS_TABLET ? (CONTENT_MAX_WIDTH - HORIZONTAL_PADDING * 3) / 2 : '100%' }]}
         activeOpacity={0.85}
         onPress={() => openDetail(item)}
       >
@@ -234,10 +237,13 @@ export default function AdoptionsScreen() {
 
       {/* List */}
       <FlatList
+        key={IS_TABLET ? 'tablet' : 'phone'}
+        numColumns={IS_TABLET ? 2 : 1}
+        columnWrapperStyle={IS_TABLET ? { gap: HORIZONTAL_PADDING } : undefined}
         data={pets}
         renderItem={renderPetCard}
         keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={{ paddingHorizontal: HORIZONTAL_PADDING, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%', paddingBottom: 100 }}
         onRefresh={onRefresh}
         refreshing={refreshing}
         ListEmptyComponent={
@@ -449,7 +455,7 @@ const styles = StyleSheet.create({
 
   // Filters
   filtersContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: HORIZONTAL_PADDING,
     paddingVertical: 12,
     gap: 8,
   },
@@ -562,7 +568,7 @@ const styles = StyleSheet.create({
   adoptBtn: {
     backgroundColor: '#3B6B2A',
     borderRadius: 12,
-    height: 48,
+    minHeight: 48,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -570,7 +576,7 @@ const styles = StyleSheet.create({
   adoptBtnText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: IS_SMALL ? 14 : IS_TABLET ? 18 : 16,
   },
 
   // Status badge
@@ -738,7 +744,7 @@ const styles = StyleSheet.create({
   },
   contactBtnText: {
     color: '#FDF5E6',
-    fontSize: 17,
+    fontSize: IS_SMALL ? 15 : IS_TABLET ? 19 : 17,
     fontWeight: '700',
   },
 });

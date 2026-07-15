@@ -34,7 +34,10 @@ import { StyleSheet } from 'react-native';
 
 const SPECIES_OPTIONS = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otro'];
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-
+const IS_SMALL = SCREEN_W < 375;
+const IS_TABLET = SCREEN_W >= 768;
+const CONTENT_MAX_WIDTH = IS_TABLET ? 600 : SCREEN_W;
+const HORIZONTAL_PADDING = IS_TABLET ? 32 : IS_SMALL ? 12 : 16;
 export default function ReportsScreen() {
   const { reports, loading, pagination, fetchReports, createReport, updateReport } = useReports();
   const { user } = useAuth();
@@ -346,7 +349,7 @@ export default function ReportsScreen() {
     return (
       <LinearGradient
         colors={['#FFFFFF', '#F5F0E8']}
-        style={[styles.card, { padding: 0, overflow: 'hidden' }]}
+        style={[styles.card, { padding: 0, overflow: 'hidden', width: IS_TABLET ? (CONTENT_MAX_WIDTH - HORIZONTAL_PADDING * 3) / 2 : '100%' }]}
       >
         <View style={styles.cardImageContainer}>
           {item.photo_url ? (
@@ -459,10 +462,13 @@ export default function ReportsScreen() {
         </View>
       ) : (
         <FlatList
+          key={IS_TABLET ? 'tablet' : 'phone'}
+          numColumns={IS_TABLET ? 2 : 1}
+          columnWrapperStyle={IS_TABLET ? { gap: HORIZONTAL_PADDING } : undefined}
           data={reportsList}
           renderItem={renderItem}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ paddingHorizontal: HORIZONTAL_PADDING, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%', paddingBottom: 100 }}
           onRefresh={onRefresh}
           refreshing={refreshing}
           onEndReached={loadMore}
@@ -1443,7 +1449,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: IS_SMALL ? 14 : IS_TABLET ? 18 : 16,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
