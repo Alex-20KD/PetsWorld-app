@@ -741,7 +741,7 @@ export default function ReportsScreen() {
 
               <MapView
                 ref={locationMapRef}
-                style={{ width: SCREEN_W, height: SCREEN_H * 0.6 }}
+                style={{ width: width, height: height * 0.6 }}
                 provider={PROVIDER_GOOGLE}
                 initialRegion={{
                   latitude: markerCoordinate.latitude,
