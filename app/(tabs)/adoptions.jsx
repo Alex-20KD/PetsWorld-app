@@ -6,24 +6,13 @@ import {
   Modal,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   StyleSheet,
+  useWindowDimensions
 } from 'react-native';
-import {
-  Text,
-  ActivityIndicator,
-  Divider,
-  IconButton,
-} from 'react-native-paper';
+import { Text, ActivityIndicator, Divider, IconButton } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import adoptionApi from '../../services/adoptionApi';
-
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const IS_SMALL = SCREEN_W < 375;
-const IS_TABLET = SCREEN_W >= 768;
-const CONTENT_MAX_WIDTH = IS_TABLET ? 600 : SCREEN_W;
-const HORIZONTAL_PADDING = IS_TABLET ? 32 : IS_SMALL ? 12 : 16;
 // ─── Helpers ──────────────────────────────────────────────────
 function formatAge(ageInMonths) {
   if (ageInMonths == null) return 'Edad desconocida';
@@ -51,6 +40,13 @@ function statusConfig(status) {
 
 // ─── Component ────────────────────────────────────────────────
 export default function AdoptionsScreen() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+  const isTablet = width >= 768;
+  const isSmall = width < 375;
+  const contentMaxWidth = isTablet ? 600 : width;
+  const horizontalPadding = isTablet ? 32 : isSmall ? 12 : 16;
+
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -105,7 +101,7 @@ export default function AdoptionsScreen() {
   function renderPetCard({ item }) {
     return (
       <TouchableOpacity
-        style={[styles.card, { width: IS_TABLET ? (CONTENT_MAX_WIDTH - HORIZONTAL_PADDING * 3) / 2 : '100%' }]}
+        style={[styles.card, { width: isLandscape || isTablet ? (contentMaxWidth - horizontalPadding * 3) / 2 : '100%' }]}
         activeOpacity={0.85}
         onPress={() => openDetail(item)}
       >
@@ -152,7 +148,7 @@ export default function AdoptionsScreen() {
 
           <TouchableOpacity style={styles.adoptBtn} onPress={() => openDetail(item)}>
             <Ionicons name="heart" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-            <Text style={styles.adoptBtnText}>Quiero adoptar</Text>
+            <Text style={[styles.adoptBtnText, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}>Quiero adoptar</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -163,13 +159,17 @@ export default function AdoptionsScreen() {
   if (loading && pets.length === 0) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={[styles.header, isLandscape && { paddingTop: 8, paddingBottom: 8 }]}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.headerSuperTitle}>PETSWORLD</Text>
-            <Text style={styles.headerTitle}>Adopciones</Text>
-            <Text style={styles.headerSub}>
-              Cargando...
-            </Text>
+            {!isLandscape && (
+              <Text style={styles.headerSuperTitle}>PETSWORLD</Text>
+            )}
+            <Text style={[styles.headerTitle, isLandscape && { fontSize: 22 }]}>Adopciones</Text>
+            {!isLandscape && (
+              <Text style={styles.headerSub}>
+                Cargando...
+              </Text>
+            )}
           </View>
           <View style={styles.headerIconCircle}>
             <Ionicons name="heart" size={20} color="#FFFFFF" />
@@ -186,13 +186,17 @@ export default function AdoptionsScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isLandscape && { paddingTop: 8, paddingBottom: 8 }]}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerSuperTitle}>PETSWORLD</Text>
-          <Text style={styles.headerTitle}>Adopciones</Text>
-          <Text style={styles.headerSub}>
-            {pets.length} {pets.length === 1 ? 'mascota esperando familia' : 'mascotas esperando familia'}
-          </Text>
+          {!isLandscape && (
+            <Text style={styles.headerSuperTitle}>PETSWORLD</Text>
+          )}
+          <Text style={[styles.headerTitle, isLandscape && { fontSize: 22 }]}>Adopciones</Text>
+          {!isLandscape && (
+            <Text style={styles.headerSub}>
+              {pets.length} {pets.length === 1 ? 'mascota esperando familia' : 'mascotas esperando familia'}
+            </Text>
+          )}
         </View>
         <View style={styles.headerIconCircle}>
           <Ionicons name="heart" size={20} color="#FFFFFF" />
@@ -237,13 +241,13 @@ export default function AdoptionsScreen() {
 
       {/* List */}
       <FlatList
-        key={IS_TABLET ? 'tablet' : 'phone'}
-        numColumns={IS_TABLET ? 2 : 1}
-        columnWrapperStyle={IS_TABLET ? { gap: HORIZONTAL_PADDING } : undefined}
+        key={isLandscape || isTablet ? 'multi' : 'single'}
+        numColumns={isLandscape || isTablet ? 2 : 1}
+        columnWrapperStyle={isLandscape || isTablet ? { gap: horizontalPadding } : undefined}
         data={pets}
         renderItem={renderPetCard}
         keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={{ paddingHorizontal: HORIZONTAL_PADDING, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%', paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: horizontalPadding, maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%', paddingBottom: 100 }}
         onRefresh={onRefresh}
         refreshing={refreshing}
         ListEmptyComponent={
@@ -359,7 +363,7 @@ export default function AdoptionsScreen() {
                     style={styles.contactBtn}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.contactBtnText}>📞 Contactar</Text>
+                    <Text style={[styles.contactBtnText, { fontSize: isSmall ? 15 : isTablet ? 19 : 17 }]}>📞 Contactar</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -455,7 +459,7 @@ const styles = StyleSheet.create({
 
   // Filters
   filtersContainer: {
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 8,
   },
@@ -576,7 +580,7 @@ const styles = StyleSheet.create({
   adoptBtnText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
-    fontSize: IS_SMALL ? 14 : IS_TABLET ? 18 : 16,
+    fontSize: 16,
   },
 
   // Status badge
@@ -744,7 +748,7 @@ const styles = StyleSheet.create({
   },
   contactBtnText: {
     color: '#FDF5E6',
-    fontSize: IS_SMALL ? 15 : IS_TABLET ? 19 : 17,
     fontWeight: '700',
+    fontSize: 17,
   },
 });

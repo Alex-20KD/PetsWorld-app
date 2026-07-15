@@ -3,19 +3,18 @@ import { View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { TextInput, Button, Text, HelperText, ActivityIndicator } from 'react-native-paper';
 import { Link, useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const IS_SMALL = SCREEN_W < 375;
-const IS_TABLET = SCREEN_W >= 768;
-const CONTENT_MAX_WIDTH = IS_TABLET ? 600 : SCREEN_W;
-const HORIZONTAL_PADDING = IS_TABLET ? 32 : IS_SMALL ? 12 : 16;
-
 export default function LoginScreen() {
   const { login } = useAuth();
   const router = useRouter();
   const { success: successMessage } = useLocalSearchParams();
+
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+  const isTablet = width >= 768;
+  const isSmall = width < 375;
+  const horizontalPadding = isTablet ? 32 : isSmall ? 12 : 16;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,21 +60,21 @@ export default function LoginScreen() {
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding }]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.card}>
+        <View style={[styles.card, isLandscape && { flexDirection: 'row', alignItems: 'center', gap: 24, maxWidth: 800 }]}>
           {/* Header decorativo */}
-          <View style={styles.headerContainer}>
+          <View style={[styles.headerContainer, isLandscape && { flex: 1, marginBottom: 0 }]}>
             <View style={styles.iconCircle}>
               <Text style={styles.iconEmoji}>🐾</Text>
             </View>
             <Text style={styles.title}>PetsWorld</Text>
-            <Text style={styles.subtitle}>Encuentra a tu mascota perdida</Text>
+            <Text style={[styles.subtitle, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}>Encuentra a tu mascota perdida</Text>
           </View>
 
         {/* Formulario */}
-        <View style={styles.formContainer}>
+        <View style={[styles.formContainer, isLandscape && { flex: 1.5 }]}>
           <TextInput
             label="Correo electrónico"
             value={email}
@@ -129,7 +128,7 @@ export default function LoginScreen() {
             disabled={loading}
             style={styles.button}
             contentStyle={styles.buttonContent}
-            labelStyle={styles.buttonLabel}
+            labelStyle={[styles.buttonLabel, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}
           >
             {loading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
@@ -173,7 +172,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingVertical: 40,
-    paddingHorizontal: HORIZONTAL_PADDING,
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -212,7 +210,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: IS_SMALL ? 14 : IS_TABLET ? 18 : 16,
     color: '#9B8B6E',
   },
   formContainer: {
@@ -246,7 +243,6 @@ const styles = StyleSheet.create({
   },
   buttonLabel: {
     fontFamily: 'serif',
-    fontSize: IS_SMALL ? 14 : IS_TABLET ? 18 : 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },

@@ -3,19 +3,20 @@ import { View, ScrollView } from 'react-native';
 import { Text, Button, Avatar, Card, Divider, ActivityIndicator } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const IS_SMALL = SCREEN_W < 375;
-const IS_TABLET = SCREEN_W >= 768;
-const CONTENT_MAX_WIDTH = IS_TABLET ? 600 : SCREEN_W;
-const HORIZONTAL_PADDING = IS_TABLET ? 32 : IS_SMALL ? 12 : 16;
-const IS_LANDSCAPE = SCREEN_W > SCREEN_H;
 
 export default function ProfileScreen() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
+
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+  const isTablet = width >= 768;
+  const isSmall = width < 375;
+  const contentMaxWidth = isTablet ? 600 : width;
+  const horizontalPadding = isTablet ? 32 : isSmall ? 12 : 16;
+
   const [loggingOut, setLoggingOut] = React.useState(false);
 
   async function handleLogout() {
@@ -57,7 +58,7 @@ export default function ProfileScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <LinearGradient
         colors={['#F5F0E8', '#EDE8DC']}
-        style={[styles.profileTopSection, { flexDirection: IS_LANDSCAPE ? 'row' : 'column', gap: IS_LANDSCAPE ? 24 : 0, paddingHorizontal: HORIZONTAL_PADDING }]}
+        style={[styles.profileTopSection, { flexDirection: isLandscape ? 'row' : 'column', gap: isLandscape ? 24 : 0, paddingHorizontal: horizontalPadding, paddingTop: isLandscape ? 8 : 64, paddingBottom: isLandscape ? 8 : 24 }]}
       >
         <View style={styles.avatarContainer}>
           <Avatar.Text
@@ -69,7 +70,7 @@ export default function ProfileScreen() {
           <View style={styles.statusDot} />
         </View>
 
-        <View style={{ alignItems: IS_LANDSCAPE ? 'flex-start' : 'center', justifyContent: 'center' }}>
+        <View style={{ alignItems: isLandscape ? 'flex-start' : 'center', justifyContent: 'center' }}>
           <Text style={styles.userName}>
             {user?.full_name || user?.name || 'Usuario'}
           </Text>
@@ -88,12 +89,12 @@ export default function ProfileScreen() {
       <Divider style={styles.divider} />
 
       {/* Info cards */}
-      <View style={styles.infoSection}>
+      <View style={[styles.infoSection, { paddingHorizontal: horizontalPadding }]}>
         <Text variant="titleMedium" style={styles.sectionTitle}>
           Información de la cuenta
         </Text>
 
-        <Card style={styles.infoCard} mode="elevated">
+        <Card style={[styles.infoCard, { maxWidth: contentMaxWidth }]} mode="elevated">
           <Card.Content>
             <View style={styles.infoRow}>
               <Text variant="bodyMedium" style={styles.infoLabel}>
@@ -150,7 +151,7 @@ export default function ProfileScreen() {
         disabled={loggingOut}
         style={styles.logoutButton}
         contentStyle={styles.logoutContent}
-        labelStyle={styles.logoutLabel}
+        labelStyle={[styles.logoutLabel, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}
       >
         {loggingOut ? (
           <ActivityIndicator size="small" color="#FFFFFF" />
@@ -244,7 +245,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   infoSection: {
-    paddingHorizontal: HORIZONTAL_PADDING,
     paddingTop: 24,
   },
   sectionTitle: {
@@ -258,7 +258,6 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: 'rgba(107,90,62,0.15)',
     elevation: 0,
-    maxWidth: CONTENT_MAX_WIDTH,
     alignSelf: 'center',
     width: '100%',
   },
@@ -292,7 +291,6 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   logoutLabel: {
-    fontSize: IS_SMALL ? 14 : IS_TABLET ? 18 : 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },

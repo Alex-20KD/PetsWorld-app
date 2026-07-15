@@ -30,17 +30,20 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { useReports } from '../../context/ReportsContext';
 import { useAuth } from '../../context/AuthContext';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 
 const SPECIES_OPTIONS = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otro'];
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const IS_SMALL = SCREEN_W < 375;
-const IS_TABLET = SCREEN_W >= 768;
-const CONTENT_MAX_WIDTH = IS_TABLET ? 600 : SCREEN_W;
-const HORIZONTAL_PADDING = IS_TABLET ? 32 : IS_SMALL ? 12 : 16;
 export default function ReportsScreen() {
   const { reports, loading, pagination, fetchReports, createReport, updateReport } = useReports();
   const { user } = useAuth();
+  
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+  const isTablet = width >= 768;
+  const isSmall = width < 375;
+  const contentMaxWidth = isTablet ? 600 : width;
+  const horizontalPadding = isTablet ? 32 : isSmall ? 12 : 16;
+  
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -349,7 +352,7 @@ export default function ReportsScreen() {
     return (
       <LinearGradient
         colors={['#FFFFFF', '#F5F0E8']}
-        style={[styles.card, { padding: 0, overflow: 'hidden', width: IS_TABLET ? (CONTENT_MAX_WIDTH - HORIZONTAL_PADDING * 3) / 2 : '100%' }]}
+        style={[styles.card, { padding: 0, overflow: 'hidden', width: isLandscape || isTablet ? (contentMaxWidth - horizontalPadding * 3) / 2 : '100%' }]}
       >
         <View style={styles.cardImageContainer}>
           {item.photo_url ? (
@@ -434,13 +437,17 @@ export default function ReportsScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isLandscape && { paddingTop: 8, paddingBottom: 8 }]}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerSuperTitle}>PETSWORLD</Text>
-          <Text style={styles.headerTitle}>Reportes</Text>
-          <Text style={styles.headerSub}>
-            {pagination.total} mascotas reportadas
-          </Text>
+          {!isLandscape && (
+            <Text style={styles.headerSuperTitle}>PETSWORLD</Text>
+          )}
+          <Text style={[styles.headerTitle, isLandscape && { fontSize: 22 }]}>Reportes</Text>
+          {!isLandscape && (
+            <Text style={styles.headerSub}>
+              {pagination.total} mascotas reportadas
+            </Text>
+          )}
         </View>
         <View style={styles.headerIconCircle}>
           <IconButton icon="filter-variant" iconColor="#FFFFFF" size={20} style={{ margin: 0 }} />
@@ -462,13 +469,13 @@ export default function ReportsScreen() {
         </View>
       ) : (
         <FlatList
-          key={IS_TABLET ? 'tablet' : 'phone'}
-          numColumns={IS_TABLET ? 2 : 1}
-          columnWrapperStyle={IS_TABLET ? { gap: HORIZONTAL_PADDING } : undefined}
+          key={isLandscape || isTablet ? 'multi' : 'single'}
+          numColumns={isLandscape || isTablet ? 2 : 1}
+          columnWrapperStyle={isLandscape || isTablet ? { gap: horizontalPadding } : undefined}
           data={reportsList}
           renderItem={renderItem}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={{ paddingHorizontal: HORIZONTAL_PADDING, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%', paddingBottom: 100 }}
+          contentContainerStyle={{ paddingHorizontal: horizontalPadding, maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%', paddingBottom: 100 }}
           onRefresh={onRefresh}
           refreshing={refreshing}
           onEndReached={loadMore}
@@ -701,7 +708,7 @@ export default function ReportsScreen() {
                   {creating ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
-                    <Text style={styles.submitBtnText}>Crear Reporte</Text>
+                    <Text style={[styles.submitBtnText, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}>Crear Reporte</Text>
                   )}
                 </TouchableOpacity>
               </ScrollView>
@@ -1449,7 +1456,6 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: '#FFFFFF',
-    fontSize: IS_SMALL ? 14 : IS_TABLET ? 18 : 16,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
