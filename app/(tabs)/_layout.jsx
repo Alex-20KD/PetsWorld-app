@@ -2,9 +2,12 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
+import { Text } from 'react-native';
 
 export default function TabsLayout() {
   const theme = useTheme();
+  const { user } = useAuth();
 
   return (
     <Tabs
@@ -60,6 +63,15 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: 'Admin',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙️</Text>,
+          href: user?.role === 'admin' ? undefined : null,
+          tabBarButton: user?.role === 'admin' ? undefined : () => null,
         }}
       />
     </Tabs>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, Button, Avatar, Card, Divider, ActivityIndicator } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
@@ -83,6 +83,22 @@ export default function ProfileScreen() {
               {getRolLabel(user?.role || user?.rol)}
             </Text>
           </View>
+
+          {user?.role === 'admin' && (
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/admin')}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 8,
+                backgroundColor: '#3B6B2A', borderRadius: 12,
+                paddingHorizontal: 20, paddingVertical: 10,
+                marginTop: 12, alignSelf: 'center',
+              }}>
+              <Text style={{ fontSize: 16 }}>⚙️</Text>
+              <Text style={{ color: '#FDF5E6', fontWeight: '600', fontSize: 14 }}>
+                Panel de Administración
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </LinearGradient>
 

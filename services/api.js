@@ -56,5 +56,15 @@ export async function fetchStats() {
   }
 }
 
+export async function fetchAdminStats() {
+  const response = await api.get('/admin/stats');
+  return response.data.data;
+}
+
+export async function fetchAdminUsers() {
+  const response = await api.get('/admin/users');
+  return response.data.data;
+}
+
 export default api;
 export { TOKEN_KEY };
