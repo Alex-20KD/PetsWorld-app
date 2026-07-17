@@ -415,11 +415,16 @@ export default function ReportsScreen() {
             </Text>
           ) : null}
 
-          <View style={styles.locationRow}>
-            <Text style={styles.locationIcon}>📍</Text>
-            <Text style={styles.cardLocation}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+            <Text style={{ fontSize: 12 }}>📍</Text>
+            <Text style={{ fontSize: 12, color: '#E8834A' }}>
               {item.location_description || 'Ubicación no especificada'}
             </Text>
+            {!item.is_exact_location && (
+              <Text style={{ fontSize: 10, color: '#9B8B6E', fontStyle: 'italic' }}>
+                (aprox.)
+              </Text>
+            )}
           </View>
 
           {(item.reporter_name || item.user?.full_name) ? (

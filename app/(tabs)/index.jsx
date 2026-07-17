@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
   Image,
 } from 'react-native';
-import MapView, { Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Callout, Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 
@@ -448,6 +448,23 @@ export default function MapScreen() {
                   <Text style={{ fontSize: 16 }}>🐾</Text>
                 )}
               </View>
+              <Callout tooltip={false}>
+                <View style={{ maxWidth: 200, padding: 4 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#3B6B2A' }}>
+                    {r.pet_name || 'Mascota perdida'}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: '#6B5A3E', marginTop: 2 }}>
+                    {r.species || 'Especie desconocida'} · {statusLabel(r.status)}
+                  </Text>
+                  <Text style={{
+                    fontSize: 10,
+                    color: r.is_exact_location ? '#3B6B2A' : '#9B8B6E',
+                    marginTop: 2, fontStyle: 'italic'
+                  }}>
+                    {r.is_exact_location ? '📍 Ubicación exacta' : '📍 Ubicación aproximada'}
+                  </Text>
+                </View>
+              </Callout>
             </Marker>
             <Circle
               center={{
