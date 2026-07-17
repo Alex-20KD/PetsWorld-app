@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   ActionSheetIOS,
   Dimensions,
+  Switch,
 } from 'react-native';
 import {
   Text,
@@ -67,6 +68,9 @@ export default function ReportsScreen() {
   const [isDragging, setIsDragging] = useState(false);
   const locationMapRef = useRef(null);
   const [successMsg, setSuccessMsg] = useState('');
+  const [hasReward, setHasReward] = useState(false);
+  const [rewardAmount, setRewardAmount] = useState('');
+  const [rewardDescription, setRewardDescription] = useState('');
 
   // ─── Estado del modal de edición ──────────────────────────
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -77,6 +81,9 @@ export default function ReportsScreen() {
   const [editContactEmail, setEditContactEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState('');
+  const [editHasReward, setEditHasReward] = useState(false);
+  const [editRewardAmount, setEditRewardAmount] = useState('');
+  const [editRewardDescription, setEditRewardDescription] = useState('');
 
   useEffect(() => {
     fetchReports();
@@ -111,6 +118,9 @@ export default function ReportsScreen() {
     setGpsCoords(null);
     setRadiusKm(5);
     setFormError('');
+    setHasReward(false);
+    setRewardAmount('');
+    setRewardDescription('');
   }
 
   // ─── Location picker ───────────────────────────────────
@@ -231,6 +241,9 @@ export default function ReportsScreen() {
     formData.append('longitude', gpsCoords.longitude.toString());
     formData.append('radius_km', radiusKm.toString());
     if (contactPhone.trim()) formData.append('contact_phone', contactPhone.trim());
+    formData.append('has_reward', hasReward ? '1' : '0');
+    if (hasReward && rewardAmount) formData.append('reward_amount', rewardAmount);
+    if (hasReward && rewardDescription) formData.append('reward_description', rewardDescription);
 
     if (photo) {
       formData.append('photo', {
@@ -288,6 +301,9 @@ export default function ReportsScreen() {
     setEditDescription(item.description || '');
     setEditContactPhone(item.contact_phone || '');
     setEditContactEmail(item.contact_email || '');
+    setEditHasReward(!!item.has_reward);
+    setEditRewardAmount(item.reward_amount ? String(item.reward_amount) : '');
+    setEditRewardDescription(item.reward_description || '');
     setEditError('');
     setEditModalVisible(true);
   }
@@ -305,12 +321,20 @@ export default function ReportsScreen() {
     }
     setSaving(true);
     setEditError('');
-    const result = await updateReport(editingReport.id, {
+    const editData = {
       pet_name: editPetName.trim(),
       description: editDescription.trim(),
       contact_phone: editContactPhone.trim(),
       contact_email: editContactEmail.trim(),
-    });
+      has_reward: editHasReward,
+    };
+    if (editHasReward && editRewardAmount) editData.reward_amount = editRewardAmount;
+    if (editHasReward && editRewardDescription) editData.reward_description = editRewardDescription;
+    if (!editHasReward) {
+      editData.reward_amount = null;
+      editData.reward_description = null;
+    }
+    const result = await updateReport(editingReport.id, editData);
     setSaving(false);
     if (result.success) {
       closeEditModal();
@@ -406,6 +430,21 @@ export default function ReportsScreen() {
               </Text>
             </View>
           ) : null}
+
+          {item.has_reward && (
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: 4,
+              backgroundColor: '#FFF8E1', borderRadius: 20,
+              paddingHorizontal: 10, paddingVertical: 4,
+              alignSelf: 'flex-start', marginTop: 6,
+              borderWidth: 0.5, borderColor: '#F9A825',
+            }}>
+              <Text style={{ fontSize: 12 }}>💰</Text>
+              <Text style={{ fontSize: 12, color: '#E65100', fontWeight: '600' }}>
+                {item.reward_amount ? `Recompensa: $${item.reward_amount}` : 'Ofrece recompensa'}
+              </Text>
+            </View>
+          )}
 
           {/* Botones del propietario */}
           {user && item.user_id === user.id && item.status === 'active' && (
@@ -610,6 +649,49 @@ export default function ReportsScreen() {
                   activeOutlineColor="#FF6B35"
                   disabled={creating}
                 />
+
+                {/* Toggle de recompensa */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <Text style={{ fontSize: 15, color: '#6B5A3E', fontWeight: '500' }}>💰 ¿Ofreces recompensa?</Text>
+                  <Switch
+                    value={hasReward}
+                    onValueChange={setHasReward}
+                    trackColor={{ false: '#E8E0D0', true: '#8BC34A' }}
+                    thumbColor={hasReward ? '#3B6B2A' : '#9B8B6E'}
+                    disabled={creating}
+                  />
+                </View>
+
+                {/* Campos que aparecen solo si hasReward === true */}
+                {hasReward && (
+                  <>
+                    <TextInput
+                      label="Monto de la recompensa (ej: 50.00)"
+                      value={rewardAmount}
+                      onChangeText={setRewardAmount}
+                      mode="outlined"
+                      keyboardType="decimal-pad"
+                      left={<TextInput.Icon icon="cash" />}
+                      style={styles.modalInput}
+                      outlineStyle={styles.inputOutline}
+                      outlineColor="#D1CFE2"
+                      activeOutlineColor="#FF6B35"
+                      disabled={creating}
+                    />
+                    <TextInput
+                      label="Descripción (ej: $50 en efectivo al entregar)"
+                      value={rewardDescription}
+                      onChangeText={setRewardDescription}
+                      mode="outlined"
+                      left={<TextInput.Icon icon="text-box-outline" />}
+                      style={styles.modalInput}
+                      outlineStyle={styles.inputOutline}
+                      outlineColor="#D1CFE2"
+                      activeOutlineColor="#FF6B35"
+                      disabled={creating}
+                    />
+                  </>
+                )}
 
                 {/* Ubicación — map picker */}
                 <Text variant="labelLarge" style={styles.fieldLabel}>
@@ -920,6 +1002,48 @@ export default function ReportsScreen() {
                   activeOutlineColor="#FF6B35"
                   disabled={saving}
                 />
+
+                {/* Toggle de recompensa */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <Text style={{ fontSize: 15, color: '#6B5A3E', fontWeight: '500' }}>💰 ¿Ofreces recompensa?</Text>
+                  <Switch
+                    value={editHasReward}
+                    onValueChange={setEditHasReward}
+                    trackColor={{ false: '#E8E0D0', true: '#8BC34A' }}
+                    thumbColor={editHasReward ? '#3B6B2A' : '#9B8B6E'}
+                    disabled={saving}
+                  />
+                </View>
+
+                {editHasReward && (
+                  <>
+                    <TextInput
+                      label="Monto de la recompensa (ej: 50.00)"
+                      value={editRewardAmount}
+                      onChangeText={setEditRewardAmount}
+                      mode="outlined"
+                      keyboardType="decimal-pad"
+                      left={<TextInput.Icon icon="cash" />}
+                      style={styles.modalInput}
+                      outlineStyle={styles.inputOutline}
+                      outlineColor="#D1CFE2"
+                      activeOutlineColor="#FF6B35"
+                      disabled={saving}
+                    />
+                    <TextInput
+                      label="Descripción (ej: $50 en efectivo al entregar)"
+                      value={editRewardDescription}
+                      onChangeText={setEditRewardDescription}
+                      mode="outlined"
+                      left={<TextInput.Icon icon="text-box-outline" />}
+                      style={styles.modalInput}
+                      outlineStyle={styles.inputOutline}
+                      outlineColor="#D1CFE2"
+                      activeOutlineColor="#FF6B35"
+                      disabled={saving}
+                    />
+                  </>
+                )}
 
                 {/* Error */}
                 {editError ? (
