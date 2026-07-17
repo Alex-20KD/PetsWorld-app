@@ -13,6 +13,7 @@ import { Text, ActivityIndicator, Divider, IconButton } from 'react-native-paper
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import adoptionApi from '../../services/adoptionApi';
+import { fetchStats } from '../../services/api';
 // ─── Helpers ──────────────────────────────────────────────────
 function formatAge(ageInMonths) {
   if (ageInMonths == null) return 'Edad desconocida';
@@ -38,6 +39,37 @@ function statusConfig(status) {
   }
 }
 
+// ─── StatCard ─────────────────────────────────────────────────
+function StatCard({ icon, value, label, color }) {
+  return (
+    <View style={{
+      backgroundColor: '#FDF5E6',
+      borderRadius: 12,
+      padding: 14,
+      alignItems: 'center',
+      minWidth: 90,
+      borderWidth: 0.5,
+      borderColor: 'rgba(107,90,62,0.15)',
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.08,
+      shadowRadius: 3,
+    }}>
+      <Text style={{ fontSize: 22 }}>{icon}</Text>
+      <Text style={{
+        fontSize: 24, fontWeight: 'bold',
+        color: color, fontFamily: 'serif',
+        marginTop: 4,
+      }}>{value}</Text>
+      <Text style={{
+        fontSize: 11, color: '#9B8B6E',
+        marginTop: 2, textAlign: 'center',
+      }}>{label}</Text>
+    </View>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────
 export default function AdoptionsScreen() {
   const { width, height } = useWindowDimensions();
@@ -52,6 +84,12 @@ export default function AdoptionsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('Todos');
+  const [stats, setStats] = useState({
+    total_reports: 0,
+    active_reports: 0,
+    rescued_pets: 0,
+    total_users: 0,
+  });
 
   const FILTERS = ['Todos', 'Perros', 'Gatos', 'Cachorros', 'Cerca de mí'];
 
@@ -79,6 +117,7 @@ export default function AdoptionsScreen() {
 
   useEffect(() => {
     fetchPets();
+    fetchStats().then(setStats);
   }, [fetchPets]);
 
   const onRefresh = useCallback(() => {
@@ -202,6 +241,15 @@ export default function AdoptionsScreen() {
           <Ionicons name="heart" size={20} color="#FFFFFF" />
         </View>
       </View>
+
+      {/* Stats banner */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}>
+        <StatCard icon="🐾" value={stats.rescued_pets} label="Rescatadas" color="#3B6B2A" />
+        <StatCard icon="📋" value={stats.total_reports} label="Reportes" color="#E8834A" />
+        <StatCard icon="🔍" value={stats.active_reports} label="En búsqueda" color="#5A8A3C" />
+        <StatCard icon="👥" value={stats.total_users} label="Ayudando" color="#6B5A3E" />
+      </ScrollView>
 
       {/* Filters */}
       <View>

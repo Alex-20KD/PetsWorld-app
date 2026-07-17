@@ -42,5 +42,19 @@ api.interceptors.response.use(
   }
 );
 
+export async function fetchStats() {
+  try {
+    const response = await api.get('/stats');
+    return response.data.data;
+  } catch (error) {
+    return {
+      total_reports: 0,
+      active_reports: 0,
+      rescued_pets: 0,
+      total_users: 0,
+    };
+  }
+}
+
 export default api;
 export { TOKEN_KEY };

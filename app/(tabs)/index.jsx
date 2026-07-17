@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router';
 
 import { useReports } from '../../context/ReportsContext';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../services/api';
+import api, { fetchStats } from '../../services/api';
 
 // ─── Overlay components ──────────────────────────────────────
 import PokeballOverlay from '../../components/PokeballOverlay';
@@ -107,12 +107,16 @@ export default function MapScreen() {
   // ─── Selected marker state ────────────────────────────────
   const [selectedReport, setSelectedReport] = useState(null);
 
+  // ─── Stats pill ───────────────────────────────────────────
+  const [rescuedCount, setRescuedCount] = useState(0);
+
 
 
   // ─── Init ─────────────────────────────────────────────────
   useEffect(() => {
     initLocation();
     fetchReports();
+    fetchStats().then((data) => setRescuedCount(data.rescued_pets));
   }, []);
 
   async function initLocation() {
@@ -458,6 +462,24 @@ export default function MapScreen() {
           </React.Fragment>
         ))}
       </MapView>
+
+      {/* Pill de estadística flotante */}
+      <View style={{
+        position: 'absolute', top: 16, alignSelf: 'center',
+        backgroundColor: 'rgba(253,245,230,0.95)',
+        borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8,
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        elevation: 4, shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1, shadowRadius: 4,
+        borderWidth: 0.5, borderColor: 'rgba(59,107,42,0.2)',
+        zIndex: 80,
+      }}>
+        <Text style={{ fontSize: 14 }}>🐾</Text>
+        <Text style={{ fontSize: 13, color: '#3B6B2A', fontWeight: '600' }}>
+          {rescuedCount} mascotas rescatadas
+        </Text>
+      </View>
 
       {/* Loading indicator */}
       {loading && (
