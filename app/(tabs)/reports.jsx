@@ -28,6 +28,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MotiView } from 'moti';
+import AnimatedPressable from '../../components/AnimatedPressable';
 
 import { useReports } from '../../context/ReportsContext';
 import { useAuth } from '../../context/AuthContext';
@@ -370,10 +372,15 @@ export default function ReportsScreen() {
   }
 
   // ─── Render card ────────────────────────────────────────
-  function renderItem({ item }) {
+  function renderItem({ item, index }) {
     const color = statusColor(item.status);
     const bgColor = statusBgColor(item.status);
     return (
+      <MotiView
+        from={{ opacity: 0, translateY: 20 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 350, delay: (index || 0) * 80 }}
+      >
       <LinearGradient
         colors={['#FFFFFF', '#F5F0E8']}
         style={[styles.card, { padding: 0, overflow: 'hidden', width: isLandscape || isTablet ? (contentMaxWidth - horizontalPadding * 3) / 2 : '100%' }]}
@@ -472,6 +479,7 @@ export default function ReportsScreen() {
           )}
         </View>
       </LinearGradient>
+      </MotiView>
     );
   }
 
@@ -544,15 +552,25 @@ export default function ReportsScreen() {
       )}
 
       {/* FAB */}
-      <FAB
-        icon="plus"
-        label="Reportar"
-        style={styles.fab}
-        color="#FFFFFF"
-        onPress={openModal}
-        uppercase={false}
-        labelStyle={{ fontWeight: 'bold' }}
-      />
+      <MotiView
+        from={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', damping: 10, stiffness: 200, delay: 300 }}
+        style={styles.fabContainer}
+      >
+        <AnimatedPressable onPress={openModal}>
+          <View pointerEvents="none">
+            <FAB
+              icon="plus"
+              label="Reportar"
+              style={styles.fab}
+              color="#FFFFFF"
+              uppercase={false}
+              labelStyle={{ fontWeight: 'bold' }}
+            />
+          </View>
+        </AnimatedPressable>
+      </MotiView>
 
       {/* ─── Modal de creación ───────────────────────────── */}
       <Modal
@@ -1288,10 +1306,13 @@ const styles = StyleSheet.create({
   },
 
   // ─── FAB ───────────────────────────────────────────────
-  fab: {
+  fabContainer: {
     position: 'absolute',
     right: 16,
     bottom: 20,
+    zIndex: 10,
+  },
+  fab: {
     backgroundColor: '#E8834A',
     borderRadius: 28,
     justifyContent: 'center',

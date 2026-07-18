@@ -5,6 +5,8 @@ import { Link, useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MotiView, MotiText } from 'moti';
+import AnimatedPressable from '../../components/AnimatedPressable';
 export default function LoginScreen() {
   const { login } = useAuth();
   const router = useRouter();
@@ -66,15 +68,33 @@ export default function LoginScreen() {
         <View style={[styles.card, isLandscape && { flexDirection: 'row', alignItems: 'center', gap: 24, maxWidth: 800 }]}>
           {/* Header decorativo */}
           <View style={[styles.headerContainer, isLandscape && { flex: 1, marginBottom: 0 }]}>
-            <View style={styles.iconCircle}>
-              <Text style={styles.iconEmoji}>🐾</Text>
-            </View>
-            <Text style={styles.title}>PetsWorld</Text>
-            <Text style={[styles.subtitle, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}>Encuentra a tu mascota perdida</Text>
+            <MotiView
+              from={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', delay: 0 }}
+            >
+              <View style={styles.iconCircle}>
+                <Text style={styles.iconEmoji}>🐾</Text>
+              </View>
+            </MotiView>
+            <MotiView
+              from={{ opacity: 0, translateY: -20 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: 'spring', delay: 200 }}
+              style={{ alignItems: 'center' }}
+            >
+              <Text style={styles.title}>PetsWorld</Text>
+              <Text style={[styles.subtitle, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}>Encuentra a tu mascota perdida</Text>
+            </MotiView>
           </View>
 
         {/* Formulario */}
-        <View style={[styles.formContainer, isLandscape && { flex: 1.5 }]}>
+        <MotiView
+          from={{ opacity: 0, translateY: 30 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'timing', duration: 400, delay: 400 }}
+          style={[styles.formContainer, isLandscape && { flex: 1.5 }]}
+        >
           <TextInput
             label="Correo electrónico"
             value={email}
@@ -122,20 +142,23 @@ export default function LoginScreen() {
             </HelperText>
           ) : null}
 
-          <Button
-            mode="contained"
-            onPress={handleLogin}
-            disabled={loading}
-            style={styles.button}
-            contentStyle={styles.buttonContent}
-            labelStyle={[styles.buttonLabel, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              'Iniciar Sesión'
-            )}
-          </Button>
+          <AnimatedPressable onPress={handleLogin} disabled={loading}>
+            <View pointerEvents="none">
+              <Button
+                mode="contained"
+                disabled={loading}
+                style={styles.button}
+                contentStyle={styles.buttonContent}
+                labelStyle={[styles.buttonLabel, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  'Iniciar Sesión'
+                )}
+              </Button>
+            </View>
+          </AnimatedPressable>
 
           <View style={styles.linkContainer}>
             <Text variant="bodyMedium" style={styles.linkText}>
@@ -151,7 +174,7 @@ export default function LoginScreen() {
               </Text>
             </Link>
           </View>
-        </View>
+        </MotiView>
         </View>
 
         <Text style={styles.footerText}>

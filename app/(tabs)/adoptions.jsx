@@ -12,6 +12,8 @@ import {
 import { Text, ActivityIndicator, Divider, IconButton } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MotiView } from 'moti';
+import AnimatedPressable from '../../components/AnimatedPressable';
 import adoptionApi from '../../services/adoptionApi';
 import { fetchStats } from '../../services/api';
 // ─── Helpers ──────────────────────────────────────────────────
@@ -40,8 +42,13 @@ function statusConfig(status) {
 }
 
 // ─── StatCard ─────────────────────────────────────────────────
-function StatCard({ icon, value, label, color }) {
+function StatCard({ icon, value, label, color, index }) {
   return (
+    <MotiView
+      from={{ opacity: 0, translateY: 15 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: 'spring', delay: (index || 0) * 120 }}
+    >
     <View style={{
       backgroundColor: '#FDF5E6',
       borderRadius: 12,
@@ -67,6 +74,7 @@ function StatCard({ icon, value, label, color }) {
         marginTop: 2, textAlign: 'center',
       }}>{label}</Text>
     </View>
+    </MotiView>
   );
 }
 
@@ -137,13 +145,18 @@ export default function AdoptionsScreen() {
   }
 
   // ─── Render card ──────────────────────────────────────────
-  function renderPetCard({ item }) {
+  function renderPetCard({ item, index }) {
     return (
-      <TouchableOpacity
-        style={[styles.card, { width: isLandscape || isTablet ? (contentMaxWidth - horizontalPadding * 3) / 2 : '100%' }]}
-        activeOpacity={0.85}
-        onPress={() => openDetail(item)}
+      <MotiView
+        from={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: 'spring', delay: (index || 0) * 100 }}
       >
+        <TouchableOpacity
+          style={[styles.card, { width: isLandscape || isTablet ? (contentMaxWidth - horizontalPadding * 3) / 2 : '100%' }]}
+          activeOpacity={0.85}
+          onPress={() => openDetail(item)}
+        >
         {/* Image */}
         <View style={styles.cardImageContainer}>
           {item.image_url ? (
@@ -185,12 +198,13 @@ export default function AdoptionsScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity style={styles.adoptBtn} onPress={() => openDetail(item)}>
+          <AnimatedPressable style={styles.adoptBtn} onPress={() => openDetail(item)}>
             <Ionicons name="heart" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
             <Text style={[styles.adoptBtnText, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}>Quiero adoptar</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
       </TouchableOpacity>
+      </MotiView>
     );
   }
 
@@ -245,10 +259,10 @@ export default function AdoptionsScreen() {
       {/* Stats banner */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}>
-        <StatCard icon="🐾" value={stats.rescued_pets} label="Rescatadas" color="#3B6B2A" />
-        <StatCard icon="📋" value={stats.total_reports} label="Reportes" color="#E8834A" />
-        <StatCard icon="🔍" value={stats.active_reports} label="En búsqueda" color="#5A8A3C" />
-        <StatCard icon="👥" value={stats.total_users} label="Ayudando" color="#6B5A3E" />
+        <StatCard icon="🐾" value={stats.rescued_pets} label="Rescatadas" color="#3B6B2A" index={0} />
+        <StatCard icon="📋" value={stats.total_reports} label="Reportes" color="#E8834A" index={1} />
+        <StatCard icon="🔍" value={stats.active_reports} label="En búsqueda" color="#5A8A3C" index={2} />
+        <StatCard icon="👥" value={stats.total_users} label="Ayudando" color="#6B5A3E" index={3} />
       </ScrollView>
 
       {/* Filters */}
@@ -258,24 +272,30 @@ export default function AdoptionsScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filtersContainer}
         >
-          {FILTERS.map((f) => (
-            <TouchableOpacity
+          {FILTERS.map((f, index) => (
+            <MotiView
               key={f}
-              style={[
-                styles.filterPill,
-                activeFilter === f ? styles.filterPillActive : styles.filterPillInactive,
-              ]}
-              onPress={() => setActiveFilter(f)}
+              from={{ opacity: 0, translateX: -20 }}
+              animate={{ opacity: 1, translateX: 0 }}
+              transition={{ type: 'timing', duration: 300, delay: index * 60 }}
             >
-              <Text
+              <TouchableOpacity
                 style={[
-                  styles.filterPillText,
-                  activeFilter === f ? styles.filterPillTextActive : styles.filterPillTextInactive,
+                  styles.filterPill,
+                  activeFilter === f ? styles.filterPillActive : styles.filterPillInactive,
                 ]}
+                onPress={() => setActiveFilter(f)}
               >
-                {f}
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.filterPillText,
+                    activeFilter === f ? styles.filterPillTextActive : styles.filterPillTextInactive,
+                  ]}
+                >
+                  {f}
+                </Text>
+              </TouchableOpacity>
+            </MotiView>
           ))}
         </ScrollView>
       </View>

@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MotiView } from 'moti';
 
 export default function ProfileScreen() {
   const { user, isLoading, logout } = useAuth();
@@ -110,6 +111,11 @@ export default function ProfileScreen() {
           Información de la cuenta
         </Text>
 
+        <MotiView
+          from={{ opacity: 0, translateY: 15 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', delay: 120 }}
+        >
         <Card style={[styles.infoCard, { maxWidth: contentMaxWidth }]} mode="elevated">
           <Card.Content>
             <View style={styles.infoRow}>
@@ -157,6 +163,7 @@ export default function ProfileScreen() {
             )}
           </Card.Content>
         </Card>
+        </MotiView>
       </View>
 
       {/* Logout */}
