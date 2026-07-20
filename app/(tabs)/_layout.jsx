@@ -70,7 +70,6 @@ export default function TabsLayout() {
         options={{
           title: 'Admin',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙️</Text>,
-          href: user?.role === 'admin' ? undefined : null,
           tabBarButton: user?.role === 'admin' ? undefined : () => null,
         }}
       />
