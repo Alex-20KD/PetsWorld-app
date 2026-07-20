@@ -34,6 +34,7 @@ import AnimatedPressable from '../../components/AnimatedPressable';
 import { useReports } from '../../context/ReportsContext';
 import { useAuth } from '../../context/AuthContext';
 import { StyleSheet, useWindowDimensions } from 'react-native';
+import { fetchStats } from '../../services/api';
 
 // ─── Animated wrapper for list items (hooks can't be used in renderItem) ──
 function AnimatedEntrance({ children, delay = 0, style }) {
@@ -82,6 +83,7 @@ export default function ReportsScreen() {
   
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState({ rescued_pets: 0, total_reports: 0, active_reports: 0, total_users: 0 });
 
   // Campos del formulario de creación
   const [petName, setPetName] = useState('');
@@ -122,6 +124,7 @@ export default function ReportsScreen() {
 
   useEffect(() => {
     fetchReports();
+    fetchStats().then(data => { if (data) setStats(data); });
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -541,6 +544,32 @@ export default function ReportsScreen() {
           <Text style={styles.successBannerText}>✅ {successMsg}</Text>
         </View>
       ) : null}
+
+      {/* Stats banner */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}>
+        {[
+          { icon: '🐾', value: stats.rescued_pets, label: 'Rescatadas', color: '#3B6B2A' },
+          { icon: '📋', value: stats.total_reports, label: 'Reportes', color: '#E8834A' },
+          { icon: '🔍', value: stats.active_reports, label: 'En búsqueda', color: '#5A8A3C' },
+          { icon: '👥', value: stats.total_users, label: 'Ayudando', color: '#6B5A3E' },
+        ].map((item, i) => (
+          <View key={i} style={{
+            backgroundColor: '#FDF5E6', borderRadius: 12, padding: 12,
+            alignItems: 'center', minWidth: 85,
+            borderWidth: 0.5, borderColor: 'rgba(107,90,62,0.15)',
+            elevation: 2,
+          }}>
+            <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', color: item.color, fontFamily: 'serif' }}>
+              {item.value}
+            </Text>
+            <Text style={{ fontSize: 10, color: '#9B8B6E', textAlign: 'center', marginTop: 2 }}>
+              {item.label}
+            </Text>
+          </View>
+        ))}
+      </ScrollView>
 
       {/* Lista o loading */}
       {loading && reportsList.length === 0 ? (
