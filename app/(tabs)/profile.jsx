@@ -1,11 +1,23 @@
-import React from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { Text, Button, Avatar, Card, Divider, ActivityIndicator } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MotiView } from 'moti';
+
+// ─── Reusable animation hook ──────────────────────────────────
+function useFadeSlideIn(delay = 0) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
+      Animated.spring(translateY, { toValue: 0, delay, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return { opacity, transform: [{ translateY }] };
+}
 
 export default function ProfileScreen() {
   const { user, isLoading, logout } = useAuth();
@@ -19,6 +31,9 @@ export default function ProfileScreen() {
   const horizontalPadding = isTablet ? 32 : isSmall ? 12 : 16;
 
   const [loggingOut, setLoggingOut] = React.useState(false);
+
+  // Animation for the info card
+  const infoCardAnim = useFadeSlideIn(120);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -111,11 +126,7 @@ export default function ProfileScreen() {
           Información de la cuenta
         </Text>
 
-        <MotiView
-          from={{ opacity: 0, translateY: 15 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 120 }}
-        >
+        <Animated.View style={infoCardAnim}>
         <Card style={[styles.infoCard, { maxWidth: contentMaxWidth }]} mode="elevated">
           <Card.Content>
             <View style={styles.infoRow}>
@@ -163,7 +174,7 @@ export default function ProfileScreen() {
             )}
           </Card.Content>
         </Card>
-        </MotiView>
+        </Animated.View>
       </View>
 
       {/* Logout */}

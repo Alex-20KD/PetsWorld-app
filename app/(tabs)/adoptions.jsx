@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   FlatList,
@@ -7,15 +7,48 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  useWindowDimensions
+  useWindowDimensions,
+  Animated,
 } from 'react-native';
 import { Text, ActivityIndicator, Divider, IconButton } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MotiView } from 'moti';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import adoptionApi from '../../services/adoptionApi';
 import { fetchStats } from '../../services/api';
+
+// ─── Animated wrapper for list items ──────────────────────────
+function AnimatedEntrance({ children, delay = 0, style }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 350, delay, useNativeDriver: true }),
+      Animated.spring(translateY, { toValue: 0, delay, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return (
+    <Animated.View style={[{ opacity, transform: [{ translateY }] }, style]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+function AnimatedSlideIn({ children, delay = 0, style }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(-20)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 300, delay, useNativeDriver: true }),
+      Animated.timing(translateX, { toValue: 0, duration: 300, delay, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return (
+    <Animated.View style={[{ opacity, transform: [{ translateX }] }, style]}>
+      {children}
+    </Animated.View>
+  );
+}
 // ─── Helpers ──────────────────────────────────────────────────
 function formatAge(ageInMonths) {
   if (ageInMonths == null) return 'Edad desconocida';
@@ -44,11 +77,7 @@ function statusConfig(status) {
 // ─── StatCard ─────────────────────────────────────────────────
 function StatCard({ icon, value, label, color, index }) {
   return (
-    <MotiView
-      from={{ opacity: 0, translateY: 15 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'spring', delay: (index || 0) * 120 }}
-    >
+    <AnimatedEntrance delay={(index || 0) * 120}>
     <View style={{
       backgroundColor: '#FDF5E6',
       borderRadius: 12,
@@ -74,7 +103,7 @@ function StatCard({ icon, value, label, color, index }) {
         marginTop: 2, textAlign: 'center',
       }}>{label}</Text>
     </View>
-    </MotiView>
+    </AnimatedEntrance>
   );
 }
 
@@ -147,11 +176,7 @@ export default function AdoptionsScreen() {
   // ─── Render card ──────────────────────────────────────────
   function renderPetCard({ item, index }) {
     return (
-      <MotiView
-        from={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', delay: (index || 0) * 100 }}
-      >
+      <AnimatedEntrance delay={(index || 0) * 100}>
         <TouchableOpacity
           style={[styles.card, { width: isLandscape || isTablet ? (contentMaxWidth - horizontalPadding * 3) / 2 : '100%' }]}
           activeOpacity={0.85}
@@ -204,7 +229,7 @@ export default function AdoptionsScreen() {
           </AnimatedPressable>
         </View>
       </TouchableOpacity>
-      </MotiView>
+      </AnimatedEntrance>
     );
   }
 
@@ -273,11 +298,9 @@ export default function AdoptionsScreen() {
           contentContainerStyle={styles.filtersContainer}
         >
           {FILTERS.map((f, index) => (
-            <MotiView
+            <AnimatedSlideIn
               key={f}
-              from={{ opacity: 0, translateX: -20 }}
-              animate={{ opacity: 1, translateX: 0 }}
-              transition={{ type: 'timing', duration: 300, delay: index * 60 }}
+              delay={index * 60}
             >
               <TouchableOpacity
                 style={[
@@ -295,7 +318,7 @@ export default function AdoptionsScreen() {
                   {f}
                 </Text>
               </TouchableOpacity>
-            </MotiView>
+            </AnimatedSlideIn>
           ))}
         </ScrollView>
       </View>

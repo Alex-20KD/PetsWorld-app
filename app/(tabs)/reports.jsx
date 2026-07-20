@@ -12,6 +12,7 @@ import {
   ActionSheetIOS,
   Dimensions,
   Switch,
+  Animated,
 } from 'react-native';
 import {
   Text,
@@ -28,12 +29,44 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MotiView } from 'moti';
 import AnimatedPressable from '../../components/AnimatedPressable';
 
 import { useReports } from '../../context/ReportsContext';
 import { useAuth } from '../../context/AuthContext';
 import { StyleSheet, useWindowDimensions } from 'react-native';
+
+// ─── Animated wrapper for list items (hooks can't be used in renderItem) ──
+function AnimatedEntrance({ children, delay = 0, style }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 350, delay, useNativeDriver: true }),
+      Animated.spring(translateY, { toValue: 0, delay, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return (
+    <Animated.View style={[{ opacity, transform: [{ translateY }] }, style]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+function AnimatedScaleIn({ children, delay = 0, style }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 300, delay, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, delay, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return (
+    <Animated.View style={[{ opacity, transform: [{ scale }] }, style]}>
+      {children}
+    </Animated.View>
+  );
+}
 
 const SPECIES_OPTIONS = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otro'];
 export default function ReportsScreen() {
@@ -376,11 +409,7 @@ export default function ReportsScreen() {
     const color = statusColor(item.status);
     const bgColor = statusBgColor(item.status);
     return (
-      <MotiView
-        from={{ opacity: 0, translateY: 20 }}
-        animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: 'timing', duration: 350, delay: (index || 0) * 80 }}
-      >
+      <AnimatedEntrance delay={(index || 0) * 80}>
       <LinearGradient
         colors={['#FFFFFF', '#F5F0E8']}
         style={[styles.card, { padding: 0, overflow: 'hidden', width: isLandscape || isTablet ? (contentMaxWidth - horizontalPadding * 3) / 2 : '100%' }]}
@@ -479,7 +508,7 @@ export default function ReportsScreen() {
           )}
         </View>
       </LinearGradient>
-      </MotiView>
+      </AnimatedEntrance>
     );
   }
 
@@ -552,12 +581,7 @@ export default function ReportsScreen() {
       )}
 
       {/* FAB */}
-      <MotiView
-        from={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: 'spring', damping: 10, stiffness: 200, delay: 300 }}
-        style={styles.fabContainer}
-      >
+      <AnimatedScaleIn delay={300} style={styles.fabContainer}>
         <AnimatedPressable onPress={openModal}>
           <View pointerEvents="none">
             <FAB
@@ -570,7 +594,7 @@ export default function ReportsScreen() {
             />
           </View>
         </AnimatedPressable>
-      </MotiView>
+      </AnimatedScaleIn>
 
       {/* ─── Modal de creación ───────────────────────────── */}
       <Modal

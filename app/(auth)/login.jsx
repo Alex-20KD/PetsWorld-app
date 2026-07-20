@@ -1,12 +1,37 @@
-import React, { useState } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Animated } from 'react-native';
 import { TextInput, Button, Text, HelperText, ActivityIndicator } from 'react-native-paper';
 import { Link, useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MotiView, MotiText } from 'moti';
 import AnimatedPressable from '../../components/AnimatedPressable';
+
+// ─── Reusable animation hooks ─────────────────────────────────
+function useScaleIn(delay = 0) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.5)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, delay, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return { opacity, transform: [{ scale }] };
+}
+
+function useFadeSlideIn(delay = 0) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
+      Animated.spring(translateY, { toValue: 0, delay, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return { opacity, transform: [{ translateY }] };
+}
+
 export default function LoginScreen() {
   const { login } = useAuth();
   const router = useRouter();
@@ -23,6 +48,11 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Animation styles
+  const iconAnim = useScaleIn(0);
+  const titleAnim = useFadeSlideIn(200);
+  const formAnim = useFadeSlideIn(400);
 
   async function handleLogin() {
     console.log('1. handleLogin llamado');
@@ -68,33 +98,19 @@ export default function LoginScreen() {
         <View style={[styles.card, isLandscape && { flexDirection: 'row', alignItems: 'center', gap: 24, maxWidth: 800 }]}>
           {/* Header decorativo */}
           <View style={[styles.headerContainer, isLandscape && { flex: 1, marginBottom: 0 }]}>
-            <MotiView
-              from={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', delay: 0 }}
-            >
+            <Animated.View style={iconAnim}>
               <View style={styles.iconCircle}>
                 <Text style={styles.iconEmoji}>🐾</Text>
               </View>
-            </MotiView>
-            <MotiView
-              from={{ opacity: 0, translateY: -20 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'spring', delay: 200 }}
-              style={{ alignItems: 'center' }}
-            >
+            </Animated.View>
+            <Animated.View style={[{ alignItems: 'center' }, titleAnim]}>
               <Text style={styles.title}>PetsWorld</Text>
               <Text style={[styles.subtitle, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}>Encuentra a tu mascota perdida</Text>
-            </MotiView>
+            </Animated.View>
           </View>
 
         {/* Formulario */}
-        <MotiView
-          from={{ opacity: 0, translateY: 30 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'timing', duration: 400, delay: 400 }}
-          style={[styles.formContainer, isLandscape && { flex: 1.5 }]}
-        >
+        <Animated.View style={[styles.formContainer, isLandscape && { flex: 1.5 }, formAnim]}>
           <TextInput
             label="Correo electrónico"
             value={email}
@@ -174,7 +190,7 @@ export default function LoginScreen() {
               </Text>
             </Link>
           </View>
-        </MotiView>
+        </Animated.View>
         </View>
 
         <Text style={styles.footerText}>
