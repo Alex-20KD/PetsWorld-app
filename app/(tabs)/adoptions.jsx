@@ -14,7 +14,7 @@ import { Text, ActivityIndicator, Divider, IconButton } from 'react-native-paper
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import adoptionApi from '../../services/adoptionApi';
+import { fetchAdoptionPets } from '../../services/adoptionApi';
 import { fetchStats } from '../../services/api';
 
 // ─── Animated wrapper for list items ──────────────────────────
@@ -138,10 +138,7 @@ export default function AdoptionsScreen() {
   const fetchPets = useCallback(async () => {
     try {
       setError(null);
-      const response = await adoptionApi.get('/pets');
-      const data = Array.isArray(response.data)
-        ? response.data
-        : response.data?.data ?? [];
+      const data = await fetchAdoptionPets();
       setPets(data);
     } catch (err) {
       console.error('Error fetching adoption pets:', err);
