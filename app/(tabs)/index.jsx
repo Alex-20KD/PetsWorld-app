@@ -10,6 +10,8 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Image,
+  Modal,
+  Pressable,
 } from 'react-native';
 import MapView, { Callout, Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -106,6 +108,7 @@ export default function MapScreen() {
 
   // ─── Selected marker state ────────────────────────────────
   const [selectedReport, setSelectedReport] = useState(null);
+  const [petDetailVisible, setPetDetailVisible] = useState(false);
 
   // ─── Stats pill ───────────────────────────────────────────
   const [rescuedCount, setRescuedCount] = useState(0);
@@ -219,36 +222,23 @@ export default function MapScreen() {
 
   function handleMarkerPress(report) {
     setSelectedReport(report);
+    setPetDetailVisible(true);
+  }
 
-    const isActive =
-      report.status === 'active' ||
-      report.status === 'perdido' ||
-      report.status === 'en_busqueda';
-    const hasPhone = !!report.contact_phone;
+  function closePetDetail() {
+    setPetDetailVisible(false);
+  }
 
-    const buttons = [];
+  function handleCaptureFromDetail() {
+    const report = selectedReport;
+    closePetDetail();
+    if (report) setTimeout(() => handleCapture(report), 180);
+  }
 
-    if (isActive) {
-      buttons.push({
-        text: '🎯 ¡Encontré esta mascota!',
-        onPress: () => handleCapture(report),
-      });
-    }
-
-    if (hasPhone) {
-      buttons.push({
-        text: '💬 Contactar por WhatsApp',
-        onPress: () => openWhatsApp(report.contact_phone, report.pet_name, report.species),
-      });
-    }
-
-    buttons.push({ text: 'Cerrar', style: 'cancel' });
-
-    Alert.alert(
-      report.pet_name || 'Mascota perdida',
-      `${report.species || 'Especie desconocida'}\n${statusLabel(report.status)}`,
-      buttons,
-    );
+  function handleContactFromDetail() {
+    const report = selectedReport;
+    closePetDetail();
+    if (report?.contact_phone) openWhatsApp(report.contact_phone, report.pet_name, report.species);
   }
 
   // ─── WhatsApp ─────────────────────────────────────────────
@@ -448,34 +438,33 @@ export default function MapScreen() {
                   <Text style={{ fontSize: 16 }}>🐾</Text>
                 )}
               </View>
-              <Callout tooltip={false}>
-                <View style={{ maxWidth: 200, padding: 4 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#3B6B2A' }}>
+              <Callout tooltip>
+                <View style={styles.mapCallout}>
+                  <View style={styles.mapCalloutAccent} />
+                  <Text style={styles.mapCalloutName} numberOfLines={1}>
                     {r.pet_name || 'Mascota perdida'}
                   </Text>
-                  <Text style={{ fontSize: 11, color: '#6B5A3E', marginTop: 2 }}>
+                  <Text style={styles.mapCalloutMeta} numberOfLines={1}>
                     {r.species || 'Especie desconocida'} · {statusLabel(r.status)}
                   </Text>
-                  <Text style={{
-                    fontSize: 10,
-                    color: r.is_exact_location ? '#3B6B2A' : '#9B8B6E',
-                    marginTop: 2, fontStyle: 'italic'
-                  }}>
+                  <Text style={styles.mapCalloutLocation}>
                     {r.is_exact_location ? '📍 Ubicación exacta' : '📍 Ubicación aproximada'}
                   </Text>
                 </View>
               </Callout>
             </Marker>
-            <Circle
-              center={{
-                latitude: parseFloat(r.latitude),
-                longitude: parseFloat(r.longitude),
-              }}
-              radius={(r.radius_km || 5) * 1000}
-              fillColor="rgba(139, 195, 74, 0.15)"
-              strokeColor="rgba(139, 195, 74, 0.6)"
-              strokeWidth={2}
-            />
+            {selectedReport?.id === r.id && (
+              <Circle
+                center={{
+                  latitude: parseFloat(r.latitude),
+                  longitude: parseFloat(r.longitude),
+                }}
+                radius={(r.radius_km || 5) * 1000}
+                fillColor="rgba(139, 195, 74, 0.15)"
+                strokeColor="rgba(139, 195, 74, 0.6)"
+                strokeWidth={2}
+              />
+            )}
           </React.Fragment>
         ))}
       </MapView>
@@ -577,6 +566,52 @@ export default function MapScreen() {
       />
 
 
+
+
+      <Modal
+        visible={petDetailVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={closePetDetail}
+      >
+        <Pressable style={styles.petModalBackdrop} onPress={closePetDetail}>
+          <Pressable
+            style={[styles.petModalCard, { maxHeight: Math.min(height * 0.76, 620) }]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            {selectedReport && (
+              <>
+                <View style={styles.petModalHandle} />
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cerrar detalle de mascota" style={styles.petModalClose} onPress={closePetDetail}>
+                  <Text style={styles.petModalCloseText}>×</Text>
+                </TouchableOpacity>
+                <View style={styles.petModalHero}>
+                  {selectedReport.photo_url ? (
+                    <Image source={{ uri: selectedReport.photo_url }} style={styles.petModalImage} />
+                  ) : (
+                    <View style={styles.petModalPlaceholder}><Text style={styles.petModalPlaceholderEmoji}>🐾</Text></View>
+                  )}
+                  <View style={styles.petModalStatus}><Text style={styles.petModalStatusText}>{statusLabel(selectedReport.status)}</Text></View>
+                </View>
+                <Text style={styles.petModalTitle} numberOfLines={1}>{selectedReport.pet_name || 'Mascota sin nombre'}</Text>
+                <Text style={styles.petModalSubtitle}>{selectedReport.species || 'Especie desconocida'}{selectedReport.breed ? ` · ${selectedReport.breed}` : ''}</Text>
+                <View style={styles.petModalInfoRow}>
+                  <Text style={styles.petModalInfoIcon}>📍</Text>
+                  <Text style={styles.petModalInfoText}>{selectedReport.is_exact_location ? 'Ubicación exacta' : 'Zona aproximada de búsqueda'}</Text>
+                </View>
+                {!!selectedReport.description && <Text style={styles.petModalDescription} numberOfLines={3}>{selectedReport.description}</Text>}
+                {['active', 'perdido', 'en_busqueda'].includes(selectedReport.status) && (
+                  <TouchableOpacity style={styles.petModalPrimaryButton} onPress={handleCaptureFromDetail}><Text style={styles.petModalPrimaryButtonText}>🎯 Vi a esta mascota</Text></TouchableOpacity>
+                )}
+                {!!selectedReport.contact_phone && (
+                  <TouchableOpacity style={styles.petModalSecondaryButton} onPress={handleContactFromDetail}><Text style={styles.petModalSecondaryButtonText}>💬 Contactar por WhatsApp</Text></TouchableOpacity>
+                )}
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* PokeballOverlay — shown during capture processing */}
       <PokeballOverlay visible={capturing} message={captureMessage} />
@@ -681,4 +716,30 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 13,
   },
+  mapCallout: { width: 210, backgroundColor: '#FDF5E6', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: 'rgba(107, 90, 62, 0.16)', alignItems: 'center', elevation: 5 },
+  mapCalloutAccent: { width: 32, height: 4, borderRadius: 4, backgroundColor: '#E8834A', marginBottom: 6 },
+  mapCalloutName: { color: '#3B6B2A', fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  mapCalloutMeta: { color: '#6B5A3E', fontSize: 11, marginTop: 3, textAlign: 'center' },
+  mapCalloutLocation: { color: '#9B8B6E', fontSize: 10, marginTop: 5, textAlign: 'center' },
+  petModalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: 'rgba(43, 35, 23, 0.50)' },
+  petModalCard: { width: '100%', maxWidth: 390, backgroundColor: '#FDF5E6', borderRadius: 24, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(107, 90, 62, 0.16)', shadowColor: '#2C2419', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 18, elevation: 12 },
+  petModalHandle: { width: 38, height: 4, borderRadius: 4, backgroundColor: '#D8C8AA', marginBottom: 14 },
+  petModalClose: { position: 'absolute', right: 14, top: 14, width: 30, height: 30, borderRadius: 15, backgroundColor: '#F1E5CF', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  petModalCloseText: { color: '#6B5A3E', fontSize: 24, lineHeight: 26 },
+  petModalHero: { width: 112, height: 112, borderRadius: 56, backgroundColor: '#E9F1DB', padding: 4, marginBottom: 12 },
+  petModalImage: { width: '100%', height: '100%', borderRadius: 52, resizeMode: 'cover' },
+  petModalPlaceholder: { flex: 1, borderRadius: 52, backgroundColor: '#DDEBCB', alignItems: 'center', justifyContent: 'center' },
+  petModalPlaceholderEmoji: { fontSize: 46 },
+  petModalStatus: { position: 'absolute', bottom: -8, alignSelf: 'center', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: '#3B6B2A', borderWidth: 2, borderColor: '#FDF5E6' },
+  petModalStatusText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
+  petModalTitle: { marginTop: 5, color: '#3B6B2A', fontFamily: 'serif', fontSize: 26, fontWeight: '800', textAlign: 'center' },
+  petModalSubtitle: { color: '#9B8B6E', fontSize: 13, textAlign: 'center', marginTop: 3 },
+  petModalInfoRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4EBD9', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, marginTop: 15 },
+  petModalInfoIcon: { fontSize: 14, marginRight: 6 },
+  petModalInfoText: { color: '#6B5A3E', fontSize: 12, fontWeight: '600' },
+  petModalDescription: { color: '#6B5A3E', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 12 },
+  petModalPrimaryButton: { width: '100%', alignItems: 'center', borderRadius: 14, backgroundColor: '#3B6B2A', paddingVertical: 13, marginTop: 16 },
+  petModalPrimaryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  petModalSecondaryButton: { width: '100%', alignItems: 'center', borderRadius: 14, borderWidth: 1, borderColor: '#E8834A', backgroundColor: '#FFF9EE', paddingVertical: 12, marginTop: 9 },
+  petModalSecondaryButtonText: { color: '#C86732', fontSize: 14, fontWeight: '800' },
 });
