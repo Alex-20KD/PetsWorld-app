@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AnimatedPressable from '../../components/AnimatedPressable';
+import { fetchStats } from '../../services/api';
 
 // ─── Reusable animation hooks ─────────────────────────────────
 function useScaleIn(delay = 0) {
@@ -48,11 +49,29 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    rescued_pets: 0,
+    total_reports: 0,
+    active_reports: 0,
+    total_users: 0,
+  });
 
   // Animation styles
   const iconAnim = useScaleIn(0);
   const titleAnim = useFadeSlideIn(200);
   const formAnim = useFadeSlideIn(400);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchStats().then((data) => {
+      if (isMounted && data) setStats(data);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function handleLogin() {
     console.log('1. handleLogin llamado');
@@ -107,6 +126,28 @@ export default function LoginScreen() {
               <Text style={styles.title}>PetsWorld</Text>
               <Text style={[styles.subtitle, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}>Encuentra a tu mascota perdida</Text>
             </Animated.View>
+
+            <View style={styles.statsSection}>
+              <Text style={styles.statsHeading}>Una comunidad que sí ayuda</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.statsScrollContent}
+              >
+                {[
+                  { icon: '🐾', value: stats.rescued_pets, label: 'Rescatadas', color: '#3B6B2A' },
+                  { icon: '📋', value: stats.total_reports, label: 'Reportes', color: '#E8834A' },
+                  { icon: '🔍', value: stats.active_reports, label: 'En búsqueda', color: '#5A8A3C' },
+                  { icon: '👥', value: stats.total_users, label: 'Personas ayudando', color: '#6B5A3E' },
+                ].map((item) => (
+                  <View key={item.label} style={styles.statCard}>
+                    <Text style={styles.statIcon}>{item.icon}</Text>
+                    <Text style={[styles.statValue, { color: item.color }]}>{item.value}</Text>
+                    <Text style={styles.statLabel}>{item.label}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
           </View>
 
         {/* Formulario */}
@@ -250,6 +291,47 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: '#9B8B6E',
+  },
+  statsSection: {
+    alignSelf: 'stretch',
+    marginTop: 24,
+  },
+  statsHeading: {
+    color: '#6B5A3E',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  statsScrollContent: {
+    gap: 8,
+    paddingHorizontal: 2,
+  },
+  statCard: {
+    alignItems: 'center',
+    backgroundColor: '#FDF5E6',
+    borderColor: 'rgba(107,90,62,0.15)',
+    borderRadius: 12,
+    borderWidth: 0.5,
+    elevation: 2,
+    minWidth: 82,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+  },
+  statIcon: {
+    fontSize: 18,
+  },
+  statValue: {
+    fontFamily: 'serif',
+    fontSize: 21,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  statLabel: {
+    color: '#9B8B6E',
+    fontSize: 9,
+    marginTop: 2,
+    textAlign: 'center',
   },
   formContainer: {
     width: '100%',
