@@ -121,6 +121,7 @@ export default function ReportsScreen() {
   const [editHasReward, setEditHasReward] = useState(false);
   const [editRewardAmount, setEditRewardAmount] = useState('');
   const [editRewardDescription, setEditRewardDescription] = useState('');
+  const [editRadiusKm, setEditRadiusKm] = useState(5);
 
   useEffect(() => {
     fetchReports();
@@ -342,6 +343,7 @@ export default function ReportsScreen() {
     setEditHasReward(!!item.has_reward);
     setEditRewardAmount(item.reward_amount ? String(item.reward_amount) : '');
     setEditRewardDescription(item.reward_description || '');
+    setEditRadiusKm(Number(item.radius_km) || 5);
     setEditError('');
     setEditModalVisible(true);
   }
@@ -364,6 +366,7 @@ export default function ReportsScreen() {
       description: editDescription.trim(),
       contact_phone: editContactPhone.trim(),
       contact_email: editContactEmail.trim(),
+      radius_km: editRadiusKm,
       has_reward: editHasReward,
     };
     if (editHasReward && editRewardAmount) editData.reward_amount = editRewardAmount;
@@ -947,6 +950,7 @@ export default function ReportsScreen() {
                       ]}
                       onPress={() => {
                         setTempRadius(km);
+                        setRadiusKm(km);
                         const delta = (km * 2.5) / 111;
                         locationMapRef.current?.animateToRegion({
                           latitude: markerCoordinate.latitude,
@@ -998,7 +1002,7 @@ export default function ReportsScreen() {
         onRequestClose={closeEditModal}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, { height: '70%' }]}>
+          <View style={[styles.modalContainer, { height: '85%' }]}>
             <KeyboardAvoidingView
               style={{ flex: 1 }}
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -1078,6 +1082,26 @@ export default function ReportsScreen() {
                   activeOutlineColor="#FF6B35"
                   disabled={saving}
                 />
+
+                {/* Radio de búsqueda */}
+                <View style={styles.editRadiusSection}>
+                  <Text style={styles.editRadiusLabel}>📍 Radio de búsqueda: {editRadiusKm} km</Text>
+                  <View style={styles.radiusChipsRow}>
+                    {[1, 3, 5, 10, 20].map((km) => (
+                      <TouchableOpacity
+                        key={km}
+                        style={[styles.radiusChip, editRadiusKm === km && styles.radiusChipActive]}
+                        onPress={() => setEditRadiusKm(km)}
+                        disabled={saving}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.radiusChipText, editRadiusKm === km && styles.radiusChipTextActive]}>
+                          {km} km
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
 
                 {/* Toggle de recompensa */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -1701,6 +1725,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
+  editRadiusSection: {
+    marginBottom: 16,
+  },
+  editRadiusLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6B5A3E',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
   // ─── Edit modal buttons ────────────────────────────────
   editModalButtons: {
     flexDirection: 'row',

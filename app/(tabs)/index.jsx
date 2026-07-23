@@ -109,6 +109,7 @@ export default function MapScreen() {
   // ─── Selected marker state ────────────────────────────────
   const [selectedReport, setSelectedReport] = useState(null);
   const [petDetailVisible, setPetDetailVisible] = useState(false);
+  const markerInteractionRef = useRef(false);
 
   // ─── Stats pill ───────────────────────────────────────────
   const [rescuedCount, setRescuedCount] = useState(0);
@@ -220,9 +221,27 @@ export default function MapScreen() {
 
   // ─── Marker tap handler ───────────────────────────────────
 
+  function preserveSelectionForCurrentTap() {
+    markerInteractionRef.current = true;
+    setTimeout(() => {
+      markerInteractionRef.current = false;
+    }, 0);
+  }
+
   function handleMarkerPress(report) {
+    preserveSelectionForCurrentTap();
+    setSelectedReport(report);
+  }
+
+  function openPetDetail(report) {
+    preserveSelectionForCurrentTap();
     setSelectedReport(report);
     setPetDetailVisible(true);
+  }
+
+  function handleMapPress() {
+    if (markerInteractionRef.current) return;
+    setSelectedReport(null);
   }
 
   function closePetDetail() {
@@ -408,6 +427,7 @@ export default function MapScreen() {
         showsUserLocation={hasGps}
         showsMyLocationButton={false}
         customMapStyle={NATURAL_MAP_STYLE}
+        onPress={handleMapPress}
       >
         {filteredReports.map((r) => (
           <React.Fragment key={r.id}>
@@ -438,7 +458,7 @@ export default function MapScreen() {
                   <Text style={{ fontSize: 16 }}>🐾</Text>
                 )}
               </View>
-              <Callout tooltip>
+              <Callout tooltip onPress={() => openPetDetail(r)}>
                 <View style={styles.mapCallout}>
                   <View style={styles.mapCalloutAccent} />
                   <Text style={styles.mapCalloutName} numberOfLines={1}>
@@ -448,8 +468,9 @@ export default function MapScreen() {
                     {r.species || 'Especie desconocida'} · {statusLabel(r.status)}
                   </Text>
                   <Text style={styles.mapCalloutLocation}>
-                    {r.is_exact_location ? '📍 Ubicación exacta' : '📍 Ubicación aproximada'}
+                    {r.is_exact_location ? '📍 Ubicación exacta' : '📍 Ubicación aproximada'} · Radio: {Number(r.radius_km) || 5} km
                   </Text>
+                  <Text style={styles.mapCalloutHint}>Toca esta ficha para ver detalles</Text>
                 </View>
               </Callout>
             </Marker>
@@ -459,7 +480,7 @@ export default function MapScreen() {
                   latitude: parseFloat(r.latitude),
                   longitude: parseFloat(r.longitude),
                 }}
-                radius={(r.radius_km || 5) * 1000}
+                radius={(Number(r.radius_km) || 5) * 1000}
                 fillColor="rgba(139, 195, 74, 0.15)"
                 strokeColor="rgba(139, 195, 74, 0.6)"
                 strokeWidth={2}
@@ -721,6 +742,7 @@ const styles = StyleSheet.create({
   mapCalloutName: { color: '#3B6B2A', fontSize: 14, fontWeight: '800', textAlign: 'center' },
   mapCalloutMeta: { color: '#6B5A3E', fontSize: 11, marginTop: 3, textAlign: 'center' },
   mapCalloutLocation: { color: '#9B8B6E', fontSize: 10, marginTop: 5, textAlign: 'center' },
+  mapCalloutHint: { color: '#3B6B2A', fontSize: 10, fontWeight: '700', marginTop: 7, textAlign: 'center' },
   petModalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: 'rgba(43, 35, 23, 0.50)' },
   petModalCard: { width: '100%', maxWidth: 390, backgroundColor: '#FDF5E6', borderRadius: 24, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(107, 90, 62, 0.16)', shadowColor: '#2C2419', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 18, elevation: 12 },
   petModalHandle: { width: 38, height: 4, borderRadius: 4, backgroundColor: '#D8C8AA', marginBottom: 14 },
