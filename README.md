@@ -56,34 +56,74 @@ npm install --legacy-peer-deps
 
 ## 🔧 Configuración
 
-Edita `services/api.js` y cambia la IP por la de tu servidor principal:
+Crea un archivo `.env` en la raíz del proyecto. Las URLs están centralizadas en `services/serviceConfig.js`; no es necesario editar código ni cambiar la IP de la red local.
 
-```js
-const api = axios.create({
-  baseURL: 'http://TU_IP:8000/api',
-});
+```env
+EXPO_PUBLIC_CORE_API_URL=https://petsworld-api.onrender.com/api
+EXPO_PUBLIC_ADOPTIONS_API_URL=https://patsworld-backend.onrender.com
 ```
 
-Edita `services/adoptionApi.js` para el backend secundario de adopciones:
+Las variables `EXPO_PUBLIC_*` se integran al bundle de Expo. Si se modifican, reinicia Metro con `npx expo start -c`; para una APK de producción es necesario generar una nueva build.
 
-```js
-const adoptionApi = axios.create({
-  baseURL: 'http://TU_IP:3000',
-});
+---
+
+## ☁️ Servicios desplegados y presentación
+
+| Servicio | Tecnología | URL pública | Uso |
+|---|---|---|---|
+| API principal | Laravel + Sanctum | `https://petsworld-api.onrender.com/api` | Autenticación, reportes, mapa, estadísticas y perfil |
+| API de adopciones | NestJS | `https://patsworld-backend.onrender.com` | Listado de mascotas y contacto de adopción |
+| Base de datos y fotos | Supabase | Configurada solo en los backends | PostgreSQL y Storage |
+
+Los dos backends son públicos, por lo que durante una presentación en la universidad no se debe sustituir ninguna URL por una IP local.
+
+### Laravel en Render
+
+Laravel se despliega mediante Docker con PHP 8.4, PDO PostgreSQL y GD. GD permite validar, recomprimir y eliminar metadatos de las fotografías antes de enviarlas a Supabase Storage.
+
+Variables mínimas del servicio Laravel en Render:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://petsworld-api.onrender.com
+CACHE_STORE=file
+SESSION_DRIVER=file
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_SERVICE_KEY=solo_en_render
+SUPABASE_BUCKET=lost-pets
 ```
+
+`SUPABASE_SERVICE_KEY` es un secreto del servidor: nunca debe agregarse a este repositorio ni a la app móvil.
+
+Antes del primer uso de la base de datos de producción, ejecuta en el Shell de Render:
+
+```bash
+php artisan migrate --force
+```
+
+### Verificaciones rápidas
+
+```bash
+curl https://petsworld-api.onrender.com/up
+curl https://petsworld-api.onrender.com/api/stats
+curl https://patsworld-backend.onrender.com/pets
+```
+
+Las fotografías aceptadas son JPG, JPEG, PNG o WebP, con un tamaño máximo de 5 MB y dimensiones de hasta 6000 × 6000 píxeles.
 
 ---
 
 ## 🚀 Levantar en desarrollo
 
 ```bash
-# Modo desarrollo (requiere dev build instalado en el celular)
-npx expo start --dev-client
+# Limpia la caché de Metro y levanta la app
+npx expo start -c
 ```
 
-Escanea el QR con la app **PetsWorld** instalada en tu celular (no con Expo Go).
+Escanea el QR con el cliente Expo o el development build configurado para el proyecto.
 
-> ⚠️ El celular y la computadora deben estar en la **misma red WiFi**.
+> Los backends están desplegados en Render; el celular no necesita estar en la misma red WiFi que la computadora para acceder a las APIs.
 
 ---
 
@@ -180,9 +220,10 @@ eas build --profile production --platform android
 
 | Sistema | Repositorio | Función |
 |---|---|---|
-| **App móvil** | `petsworld-app` (este repo) | Red comunitaria de mascotas perdidas |
-| **API móvil** | `petsworld-api` (Laravel) | Backend principal de la red |
-| **Web** | `patsworld-backend` (NestJS) | Sistema secundario de adopciones |
+| **App móvil** | `petsworld-app` (este repo) | Aplicación React Native / Expo |
+| **API principal** | `petsworld-api` (Laravel) | Autenticación, reportes, mapa, estadísticas y fotos |
+| **API de adopciones** | `patsworld-backend` (NestJS) | Mascotas en adopción y contacto por WhatsApp |
+| **Frontend web** | `patsworld-frontend` (Angular) | Interfaz web del proyecto |
 
 ---
 
