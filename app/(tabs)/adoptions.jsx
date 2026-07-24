@@ -9,12 +9,14 @@ import {
   StyleSheet,
   useWindowDimensions,
   Animated,
+  Linking,
+  Alert,
 } from 'react-native';
 import { Text, ActivityIndicator, Divider, IconButton } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import { fetchAdoptionPets } from '../../services/adoptionApi';
+import { fetchAdoptionPets, fetchAdoptionPet } from '../../services/adoptionApi';
 import { fetchStats } from '../../services/api';
 
 // ─── Animated wrapper for list items ──────────────────────────
@@ -128,11 +130,21 @@ export default function AdoptionsScreen() {
     total_users: 0,
   });
 
-  const FILTERS = ['Todos', 'Perros', 'Gatos', 'Cachorros', 'Cerca de mí'];
+  const FILTERS = ['Todos', 'Perros', 'Gatos'];
+
+  const visiblePets = activeFilter === 'Todos'
+    ? pets
+    : pets.filter((pet) => {
+        const species = String(pet.species || '').trim().toLowerCase();
+        if (activeFilter === 'Perros') return species === 'dog' || species === 'perro';
+        if (activeFilter === 'Gatos') return species === 'cat' || species === 'gato';
+        return true;
+      });
 
   // Modal state
   const [selectedPet, setSelectedPet] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [contacting, setContacting] = useState(false);
 
   // ─── Fetch ────────────────────────────────────────────────
   const fetchPets = useCallback(async () => {
@@ -168,6 +180,43 @@ export default function AdoptionsScreen() {
   function closeDetail() {
     setModalVisible(false);
     setSelectedPet(null);
+  }
+
+  async function contactForAdoption(pet = selectedPet) {
+    if (!pet?.id || contacting) return;
+
+    setContacting(true);
+    try {
+      const detail = await fetchAdoptionPet(pet.id);
+      const phone = detail?.ownerPhone ?? detail?.owner_phone ?? pet.ownerPhone ?? pet.owner_phone;
+      const cleanedPhone = String(phone || '').replace(/\D/g, '');
+
+      if (!cleanedPhone) {
+        Alert.alert(
+          'Contacto no disponible',
+          'El propietario todavía no tiene un número de WhatsApp registrado para esta mascota.',
+        );
+        return;
+      }
+
+      const localPhone = cleanedPhone.startsWith('593')
+        ? cleanedPhone.slice(3)
+        : cleanedPhone.replace(/^0/, '');
+      const number = '593' + localPhone;
+      const species = String(detail?.species || pet.species || '').toLowerCase();
+      const speciesLabel = species === 'cat' ? 'gato' : species === 'dog' ? 'perro' : 'mascota';
+      const name = detail?.name || pet.name || 'esta mascota';
+      const message = '¡Hola! 😊 Vi a ' + name + ' en PetsWorld y me encantaría conocer más sobre su proceso de adopción. Estoy interesado/a en adoptar a este ' + speciesLabel + '. ¿Podemos conversar? 🐾';
+      const url = 'https://wa.me/' + number + '?text=' + encodeURIComponent(message);
+
+      closeDetail();
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Error opening adoption WhatsApp:', error);
+      Alert.alert('No se pudo abrir WhatsApp', 'Intenta nuevamente en unos segundos.');
+    } finally {
+      setContacting(false);
+    }
   }
 
   // ─── Render card ──────────────────────────────────────────
@@ -220,7 +269,7 @@ export default function AdoptionsScreen() {
             </Text>
           </View>
 
-          <AnimatedPressable style={styles.adoptBtn} onPress={() => openDetail(item)}>
+          <AnimatedPressable style={styles.adoptBtn} onPress={() => contactForAdoption(item)}>
             <Ionicons name="heart" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
             <Text style={[styles.adoptBtnText, { fontSize: isSmall ? 14 : isTablet ? 18 : 16 }]}>Quiero adoptar</Text>
           </AnimatedPressable>
@@ -269,7 +318,7 @@ export default function AdoptionsScreen() {
           <Text style={[styles.headerTitle, isLandscape && { fontSize: 22 }]}>Adopciones</Text>
           {!isLandscape && (
             <Text style={styles.headerSub}>
-              {pets.length} {pets.length === 1 ? 'mascota esperando familia' : 'mascotas esperando familia'}
+              {visiblePets.length} {visiblePets.length === 1 ? 'mascota esperando familia' : 'mascotas esperando familia'}
             </Text>
           )}
         </View>
@@ -332,7 +381,7 @@ export default function AdoptionsScreen() {
         key={isLandscape || isTablet ? 'multi' : 'single'}
         numColumns={isLandscape || isTablet ? 2 : 1}
         columnWrapperStyle={isLandscape || isTablet ? { gap: horizontalPadding } : undefined}
-        data={pets}
+        data={visiblePets}
         renderItem={renderPetCard}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={{ paddingHorizontal: horizontalPadding, maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%', paddingBottom: 100 }}
@@ -450,8 +499,10 @@ export default function AdoptionsScreen() {
                   <TouchableOpacity
                     style={styles.contactBtn}
                     activeOpacity={0.85}
+                    onPress={() => contactForAdoption()}
+                    disabled={contacting}
                   >
-                    <Text style={[styles.contactBtnText, { fontSize: isSmall ? 15 : isTablet ? 19 : 17 }]}>📞 Contactar</Text>
+                    <Text style={[styles.contactBtnText, { fontSize: isSmall ? 15 : isTablet ? 19 : 17 }]}>💬 {contacting ? 'Abriendo WhatsApp...' : 'Contactar por WhatsApp'}</Text>
                   </TouchableOpacity>
                 </>
               )}

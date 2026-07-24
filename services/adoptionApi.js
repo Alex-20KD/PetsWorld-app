@@ -23,4 +23,9 @@ export async function fetchAdoptionPets() {
   return rawPets.map(normalizePet);
 }
 
+export async function fetchAdoptionPet(id) {
+  const response = await adoptionApi.get('/pets/' + encodeURIComponent(id));
+  return normalizePet(response.data?.data ?? response.data);
+}
+
 export default adoptionApi;

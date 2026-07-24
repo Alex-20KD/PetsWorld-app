@@ -8,5 +8,5 @@ export const CORE_API_URL = normalizeBaseUrl(
 );
 
 export const ADOPTIONS_API_URL = normalizeBaseUrl(
-  process.env.EXPO_PUBLIC_ADOPTIONS_API_URL || 'http://192.168.100.186:3000',
+  process.env.EXPO_PUBLIC_ADOPTIONS_API_URL || 'https://patsworld-backend.onrender.com',
 );
