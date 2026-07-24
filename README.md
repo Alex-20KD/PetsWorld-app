@@ -201,19 +201,20 @@ petsworld-app/
 
 ---
 
-## 📦 Build de Producción
+## 📦 Build de Producción y Simulación de Tiendas
 
-```bash
-# Configurar EAS
+Para simular el flujo real de despliegue en tiendas de aplicaciones (App Store / Google Play), el proyecto utiliza **EAS (Expo Application Services)**. A través de este servicio en la nube, empaquetamos el código y generamos los instalables nativos sin necesidad de subir la app a producción. 
+
+Se utiliza un *Development Build* (Expo Client Dev) que nos permite testear el instalable nativo (APK) directamente en el celular, validando el funcionamiento de hardware (GPS, cámara) exactamente como lo haría el usuario final.
+
+# Configurar la conexión con la nube de Expo
 eas build:configure
 
-# Build de desarrollo (APK con Google Maps)
+# Simulación de despliegue: Build de desarrollo (APK con Google Maps nativo)
 eas build --profile development --platform android
 
-# Build de producción
+# Empaquetado final de producción (listo para la Play Store)
 eas build --profile production --platform android
-```
-
 ---
 
 ## 🔗 Ecosistema PetsWorld
