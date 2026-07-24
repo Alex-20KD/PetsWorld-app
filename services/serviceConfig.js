@@ -4,7 +4,7 @@ function normalizeBaseUrl(value) {
 
 // Solo URLs públicas: Expo incorpora las variables EXPO_PUBLIC_* en la app.
 export const CORE_API_URL = normalizeBaseUrl(
-  process.env.EXPO_PUBLIC_CORE_API_URL || 'http://192.168.1.9:8000/api',
+  process.env.EXPO_PUBLIC_CORE_API_URL || 'https://petsworld-api.onrender.com/api',
 );
 
 export const ADOPTIONS_API_URL = normalizeBaseUrl(
