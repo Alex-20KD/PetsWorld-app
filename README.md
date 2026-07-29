@@ -101,6 +101,7 @@ Antes del primer uso de la base de datos de producción, ejecuta en el Shell de 
 ```bash
 php artisan migrate --force
 ```
+ajam 
 
 ### Verificaciones rápidas
 
